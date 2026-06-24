@@ -51,3 +51,39 @@ Feature: Order Placement
     When the customer requests the order status
     Then they receive the current status of the order
 ```
+
+## 3. Kitchen Scheduler
+
+```gherkin
+Feature: Kitchen Scheduler
+
+  Scenario: Confirmed order items each enter the queue
+    Given an order has been confirmed and paid
+    When it enters the kitchen
+    Then each item in the order joins the baking queue as its own unit
+
+  Scenario: An item occupies one oven slot
+    Given there is at least one free oven slot
+    And there are items waiting in the queue
+    When the scheduler assigns work
+    Then the highest-priority waiting item is placed in one free slot
+    And it begins baking for its category's bake time
+
+  Scenario: An item finishes baking after its bake time elapses
+    Given an item is baking
+    When its bake time has elapsed
+    Then the item is marked as done
+    And its oven slot becomes free
+
+  Scenario: An order is ready when its last item finishes
+    Given an order has multiple items baking or queued
+    When all of its items are done
+    Then the order is marked ready
+    And its ready time is the completion time of its last finished item
+
+  Scenario: A baking item cannot be preempted
+    Given all oven slots are occupied
+    When a higher-priority item is waiting in the queue
+    Then no baking item is removed to make room
+    And the waiting item stays in the queue until a slot frees naturally
+```
