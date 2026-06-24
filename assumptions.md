@@ -35,3 +35,9 @@ Reasoning: the challenge speaks of items in ovens, not orders. Modeling the tray
 For an order with mixed bake times, the estimated ready time is the completion time of the slowest item.
 
 Reasoning: the customer receives the complete order at once, so readiness is bounded by the last item to finish.
+
+## 6. Payment always succeeds
+
+Confirming payment always succeeds immediately. There is no cash or card handling, amount validation, or failure path yet: the confirmation step accepts any order and transitions it straight into the kitchen queue.
+
+Reasoning: the focus is the core order-to-bake loop. Real payment processing (cash and card, amount validation, failures, refunds) is deferred. The lifecycle in assumption 3 stays intact; only the payment step is simplified to an always-successful confirmation.

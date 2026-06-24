@@ -87,3 +87,36 @@ Feature: Kitchen Scheduler
     Then no baking item is removed to make room
     And the waiting item stays in the queue until a slot frees naturally
 ```
+
+## 4. Capacity-Based Estimation
+
+```gherkin
+Feature: Capacity-Based Estimation
+
+  Scenario: Estimate when oven slots are free
+    Given the kitchen has a free oven slot for each item in the order
+    When the order is confirmed
+    Then each item's ready time is the current time plus its bake time
+    And the order's estimated ready time is the latest item ready time
+
+  Scenario: Estimate when items must wait for a slot
+    Given all oven slots are occupied
+    And no items are waiting ahead in the queue
+    When the order is confirmed
+    Then each item takes the next slot to free
+    And its ready time is that slot's free time plus its bake time
+    And the order's estimated ready time is the latest item ready time
+
+  Scenario: Estimate accounts for items already queued ahead
+    Given there are items already waiting in the queue
+    When the order is confirmed
+    Then the items already waiting take the freeing slots first
+    And the order's items take the slots that free after them
+    And the order's estimated ready time reflects that wait
+
+  Scenario: Estimation does not change kitchen state
+    Given the kitchen has items baking and queued
+    When an order's estimate is calculated
+    Then no item is started, moved, or completed as a result
+    And the kitchen state is identical before and after the estimate
+```
