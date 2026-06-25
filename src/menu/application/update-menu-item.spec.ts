@@ -23,6 +23,10 @@ class MenuRepositorySpy implements MenuRepository {
     this.updatedItems.push(item);
   }
 
+  async remove(): Promise<void> {
+    // unused by UpdateMenuItem
+  }
+
   stubFindById(item: MenuItem | null): void {
     this.found = item;
   }

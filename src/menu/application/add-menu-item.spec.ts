@@ -20,6 +20,10 @@ class MenuRepositorySpy implements MenuRepository {
   async update(): Promise<void> {
     // unused by AddMenuItem
   }
+
+  async remove(): Promise<void> {
+    // unused by AddMenuItem
+  }
 }
 
 const validData = {

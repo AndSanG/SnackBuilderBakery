@@ -9,4 +9,5 @@ export interface MenuRepository {
   add(item: MenuItem): Promise<void>;
   findById(id: string): Promise<MenuItem | null>;
   update(item: MenuItem): Promise<void>;
+  remove(id: string): Promise<void>;
 }

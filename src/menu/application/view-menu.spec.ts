@@ -23,6 +23,10 @@ class MenuRepositorySpy implements MenuRepository {
     // unused by ViewMenu
   }
 
+  async remove(): Promise<void> {
+    // unused by ViewMenu
+  }
+
   stubGetAll(items: MenuItem[]): void {
     this.result = items;
   }
