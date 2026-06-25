@@ -20,4 +20,7 @@ export interface Order {
   source: OrderSource;
   status: OrderStatus;
   totalPrice: number;
+  // TODO: ConfirmPayment waits on the Kitchen. When it lands, it will move
+  // status AwaitingPayment -> InKitchen (enqueue) and add an estimatedReadyTime
+  // field set from the Kitchen estimate.
 }
