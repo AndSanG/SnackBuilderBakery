@@ -8,6 +8,8 @@ export interface CatalogItem {
   price: number;
 }
 
+export const MENU_CATALOG = Symbol('MenuCatalog');
+
 // Owned by Orders, sized to what PlaceOrder needs from the menu. The Menu
 // module provides the adapter that implements it.
 export interface MenuCatalog {
