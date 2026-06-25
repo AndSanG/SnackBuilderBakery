@@ -43,9 +43,9 @@ Configured in the `jest` section of `package.json`:
 
 ## Patterns used here
 
-### A factory for the subject
+### A factory for the system under test
 
-Each spec has a small `makeSUT` helper that builds the subject under test with its collaborators and returns both. Construction lives in one place, and each test states only what is unique to it.
+Each spec has a small `makeSUT` helper that builds the system under test (SUT) with its collaborators and returns both. Construction lives in one place, and each test states only what is unique to it.
 
 ### A spy for the port
 
@@ -73,7 +73,7 @@ const makeSUT = () => {
 };
 ```
 
-Interaction tests assert on the captured calls (`getAllCallCount`); data tests configure a result with `stubGetAll` and assert on what the use case delivers.
+This is the spy described in the [testing guide](agents/testing.md): one double serving both verification styles. Behavior-verification tests assert on the captured calls (`getAllCallCount`); state-verification tests configure a result with `stubGetAll` and assert on what the use case delivers.
 
 ### Describe and name
 

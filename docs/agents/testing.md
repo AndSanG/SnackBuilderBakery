@@ -10,13 +10,13 @@ Test the contract, not the mechanism. For a use case, that means its defined inp
 
 ## Structure of a test
 
-Each test reads as three parts, in order:
+Each test reads as three parts, in order (the xUnit phases call these setup, exercise, and verify):
 
-1. **Arrange.** Build the subject under test and its collaborators in the state the case requires.
+1. **Arrange.** Build the system under test (SUT) and its collaborators in the state the case requires.
 2. **Act.** Exercise one behavior, usually a single call.
 3. **Assert.** Check one outcome.
 
-Keep the subject under test obvious. A small factory helper that constructs the subject with its collaborators (and returns both) keeps each test focused on what is unique to that case, and keeps construction in one place so it changes once when the constructor changes.
+Keep the SUT obvious. A small factory helper that constructs the SUT with its collaborators (and returns both) keeps each test focused on what is unique to that case, and keeps construction in one place so it changes once when the constructor changes.
 
 ## One behavior per test
 
@@ -31,16 +31,36 @@ Name a test as a sentence fragment describing the behavior: the subject, the con
 
 For example: "delivers no items on an empty repository", "fails with a not found error when the order is unknown".
 
+## Verification: state and behavior
+
+There are two ways a test confirms the exercised code did the right thing:
+
+- **State verification.** Examine the state of the SUT and its collaborators after the action and assert it is correct.
+- **Behavior verification.** Check that the SUT made the expected calls on its collaborators.
+
+Most tests use state verification. Behavior verification is the right tool when the effect is a call rather than a returned value (for example, that a confirmed order was enqueued), or when state cannot reveal the outcome (a cache hit and a cache miss look identical from the outside).
+
 ## Test doubles
 
-Prefer doubles that capture interactions over doubles that pre-program answers.
+A test double is any stand-in for a real collaborator. Following Meszaros, there are five kinds, from simplest to most involved:
 
-- **Spy.** Records how it was called (which methods, how many times, with what arguments). This is the default. Assertions are made against what the spy captured.
-- **Stub.** Returns a configured value. Use a stub only when the behavior under test reads data and therefore needs a result to read. Even then, prefer a spy that also exposes a way to set the result, so a single double serves both roles.
-- **Fake.** A working but simplified implementation of a port (for example an in-memory store). Useful for integration-style tests across a real collaborator boundary.
-- **Dummy.** A placeholder passed only to satisfy a signature, never used.
+- **Dummy.** Passed only to fill a parameter list; never actually used.
+- **Fake.** A working but simplified implementation, fine for tests but not for production (an in-memory store standing in for a database).
+- **Stub.** Returns canned answers to the calls made during the test, and nothing more.
+- **Spy.** A stub that also records how it was called (which methods, how many times, with what arguments), so the test can assert on those interactions.
+- **Mock.** Pre-programmed with expectations that form a specification of the calls it must receive, and which verifies those calls itself. Only mocks insist on behavior verification.
 
-Avoid presetting return values when the test is really about an interaction. Capturing the interaction is what proves the behavior.
+This project hand-rolls its doubles rather than using a mock framework, and favors **spies**: a spy returns a configured result when the test reads data, and records its calls when the test checks an interaction, so one double serves both verification styles and the test (not the double) makes the assertions. We do not use auto-verifying mocks with pre-set expectations. Reach for a fake only when a real collaboration boundary is worth exercising.
+
+## Classical, not mockist
+
+There are two schools of test-driven development. The mockist style replaces every collaborator with a framework mock and verifies behavior by asserting on expected calls. The classical style uses real objects or simple fakes wherever practical, doubles only the awkward collaborators, and verifies by state where it can.
+
+This project is **classical**. We prefer real objects and small hand-rolled doubles over a mock framework, default to state verification, and use behavior verification only where the call is the outcome. The reason is the coupling trade-off below: mockist tests tie themselves to how a method calls its collaborators, which makes them break under refactoring that does not change behavior. Classical tests, focused on results, stay green through such refactors and keep the freedom to change implementation.
+
+### A caveat on behavior verification
+
+Asserting on calls couples a test to how the code is implemented, not only to what it produces, so such a test can break under a refactor that does not change behavior. Prefer state verification when the outcome is observable as a returned value or a state change. Use behavior verification when the call itself is the outcome. This keeps tests resilient while still proving the interactions that matter.
 
 ## Isolation and determinism
 
