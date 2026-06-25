@@ -22,7 +22,7 @@ The first iteration is a proof of concept that establishes the full project stru
 
 ## Getting Started
 
-Built with NestJS and TypeScript. Tests run on Jest.
+Built with NestJS and TypeScript. Tests run on Jest. New to the codebase? Read [walkthrough.md](walkthrough.md) for a guided tour that traces one order through every layer.
 
 ### Requirements
 
@@ -60,9 +60,10 @@ npm run test:cov   # run with a coverage report
 ### Layout
 
 ```
-src/        application code, one folder per feature module
-docs/       design documents (requirements, contracts, decisions)
-readme.md   this file
+src/             application code, one folder per feature module
+docs/            design documents (requirements, contracts, decisions)
+walkthrough.md   guided tour of the code, layer by layer
+readme.md        this file
 ```
 
 ## Kitchen Rules
