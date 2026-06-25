@@ -7,6 +7,7 @@ The guides in this folder define how work is done in this repository. They are a
 - [development-process.md](development-process.md): how we build. The test-driven loop (red, green, refactor, commit), the phases from planning to delivery, and commit discipline. Read this to know what to do next and in what order.
 - [clean-architecture.md](clean-architecture.md): how the code is structured. The dependency rule, the layers, ports and adapters, and what data may cross a boundary. Read this to know where a piece of code belongs and what it may depend on.
 - [testing.md](testing.md): how tests are written. What a test verifies, test doubles, isolation and determinism, naming, and what not to test. Read this to know how to write a test that proves behavior.
+- [commit-messages.md](commit-messages.md): how commit messages are written. Subject form, body, and what to avoid. Read this before committing.
 
 The three are complementary: the process guide governs the rhythm of change, the architecture guide governs the shape of the result, and the testing guide governs how each change is proven. A change should satisfy all three.
 

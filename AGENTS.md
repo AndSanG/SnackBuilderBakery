@@ -17,7 +17,7 @@ Follow them. If a change would violate either, stop and reconsider the change.
 - **Test-driven.** No production code without a failing test first. Red, green, refactor, commit.
 - **Clean architecture.** Dependencies point inward. Domain code has no framework or infrastructure imports. Cross boundaries through ports defined by the consumer and sized to its needs.
 - **One implementation per abstraction.** Introduce an interface, strategy, or extra layer when its second implementation actually arrives. Until then keep the seam (one well-named method or boundary) and defer the abstraction.
-- **Commit one use case at a time.** Develop test by test, but commit a complete, tested behavior. Every commit builds and runs. See the development process guide for the exception (complex use cases may be split finer).
+- **Commit one use case at a time.** Develop test by test, but commit a complete, tested behavior. Every commit builds and runs. See the development process guide for the exception (complex use cases may be split finer), and [docs/agents/commit-messages.md](docs/agents/commit-messages.md) for how to write the message.
 
 ## Project specifics live in docs/
 
