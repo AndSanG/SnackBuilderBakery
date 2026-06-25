@@ -16,7 +16,10 @@ Scope is the current iteration (Menu, Order Placement, FIFO Kitchen Scheduler, C
 | `Order` | id, items, source, priorityTier, status, totalPrice, estimatedReadyTime | Aggregate root for an order. |
 | `OrderStatus` | AwaitingPayment, InKitchen, Ready | Minimal lifecycle for this iteration. |
 | `BakingItem` | orderItem, startedAt | `finishAt` is derived as `startedAt + bakeDuration`. No stored end time. |
-| `Kitchen` | slots (6), queue | Aggregate that owns all oven state and the waiting queue. Sole owner of scheduling. Six flat slots for now (see Deferred modeling decisions). |
+| `Ovens` | slots (6), each free or holding a `BakingItem` | Tracks capacity: which slots are occupied and when each frees. Six flat slots for now (see Deferred modeling decisions). |
+| `Queue` | ordered waiting items | The waiting line of items not yet baking. |
+| `SchedulingPolicy` | strategy: orders the queue | Decides which waiting item bakes next. `FifoPolicy` now; `PriorityPolicy` later. Swappable without touching `Ovens` or `Queue`. |
+| `Kitchen` | ovens, queue, policy | Aggregate that owns all kitchen state and is the sole owner of scheduling. Composes `Ovens`, `Queue`, and a `SchedulingPolicy`. |
 
 ### Rules captured in the domain
 
@@ -24,6 +27,7 @@ Scope is the current iteration (Menu, Order Placement, FIFO Kitchen Scheduler, C
 - `PriorityTier` is derived from `OrderSource`; it is never chosen by the customer.
 - An order is ready when its last item finishes; `estimatedReadyTime` is the latest item finish time.
 - The kitchen is poll-based: completion is computed from `BakingItem.startedAt` against the clock, never from a timer.
+- The order in which waiting items bake is decided by a `SchedulingPolicy` (Strategy), not hardcoded. FIFO now, priority later, with no change to `Ovens` or `Queue`. See [module-map.md](module-map.md) for the reasoning.
 
 ## Deferred modeling decisions
 
