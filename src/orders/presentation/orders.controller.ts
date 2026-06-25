@@ -1,20 +1,36 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { PlaceOrder } from '../application/place-order';
 import { TrackOrder } from '../application/track-order';
+import { ConfirmPayment } from '../application/confirm-payment';
+import { ReconcileOrders } from '../application/reconcile-orders';
 import { PlaceOrderDto } from './dto/place-order.dto';
 
-// The use cases already return view-shaped results (Ticket, OrderStatusView),
-// so the controller has no entity to map: it just delegates.
+// The use cases already return view-shaped results (Ticket, OrderStatusView,
+// Confirmation), so the controller has no entity to map: it just delegates.
 @Controller('orders')
 export class OrdersController {
   constructor(
     private readonly placeOrder: PlaceOrder,
     private readonly trackOrder: TrackOrder,
+    private readonly confirmPayment: ConfirmPayment,
+    private readonly reconcileOrders: ReconcileOrders,
   ) {}
 
   @Post()
   async place(@Body() dto: PlaceOrderDto) {
     return this.placeOrder.execute(dto);
+  }
+
+  // Poll-based: nothing moves on its own, so a reconcile call advances orders
+  // to the current time (an order whose estimate has passed becomes ready).
+  @Post('reconcile')
+  async reconcile() {
+    return this.reconcileOrders.execute();
+  }
+
+  @Post(':id/confirm')
+  async confirm(@Param('id') id: string) {
+    return this.confirmPayment.execute(id);
   }
 
   @Get(':id')

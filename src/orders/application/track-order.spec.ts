@@ -18,6 +18,10 @@ class OrderRepositorySpy implements OrderRepository {
     return this.order;
   }
 
+  async findByStatus(): Promise<Order[]> {
+    return [];
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }

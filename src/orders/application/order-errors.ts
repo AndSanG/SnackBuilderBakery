@@ -18,3 +18,10 @@ export class OrderNotFoundError extends Error {
     this.name = 'OrderNotFoundError';
   }
 }
+
+export class OrderAlreadyConfirmedError extends Error {
+  constructor(id: string) {
+    super(`Order is not awaiting payment: ${id}`);
+    this.name = 'OrderAlreadyConfirmedError';
+  }
+}

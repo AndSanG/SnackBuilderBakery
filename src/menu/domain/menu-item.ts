@@ -1,8 +1,7 @@
-export enum Category {
-  Cookie = 'Cookie',
-  Pastry = 'Pastry',
-  Bread = 'Bread',
-}
+import { Category } from '../../shared/domain/category';
+
+// Category lives in the shared domain; re-exported here for menu consumers.
+export { Category };
 
 export interface MenuItem {
   id: string;
