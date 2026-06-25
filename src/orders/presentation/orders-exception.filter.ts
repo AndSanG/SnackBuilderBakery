@@ -12,6 +12,11 @@ type OrderError =
   | OrderNotFoundError
   | OrderAlreadyConfirmedError;
 
+interface HttpResponse {
+  status(code: number): HttpResponse;
+  json(body: unknown): HttpResponse;
+}
+
 // Maps the order domain errors to HTTP statuses at the boundary, so the use
 // cases stay framework-free. Not-found is 404, a wrong-state confirm is 409,
 // and bad order requests are 400.
@@ -24,7 +29,7 @@ type OrderError =
 export class OrdersExceptionFilter implements ExceptionFilter {
   catch(error: OrderError, host: ArgumentsHost): void {
     const status = this.statusFor(error);
-    const response = host.switchToHttp().getResponse();
+    const response = host.switchToHttp().getResponse<HttpResponse>();
     response.status(status).json({ statusCode: status, message: error.message });
   }
 

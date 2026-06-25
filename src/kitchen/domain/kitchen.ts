@@ -23,7 +23,9 @@ interface BakingItem {
 // one process. Add real locking only if this moves to multiple processes or a
 // shared store.
 export class Kitchen {
-  private slots: (BakingItem | null)[] = new Array(OVEN_SLOTS).fill(null);
+  private slots: (BakingItem | null)[] = new Array<BakingItem | null>(
+    OVEN_SLOTS,
+  ).fill(null);
   private queue: BakeableItem[] = [];
 
   enqueue(items: BakeableItem[]): void {
