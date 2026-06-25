@@ -18,7 +18,7 @@ Each feature depends on the ones above it, so the table also reflects the build 
 
 ## Current Scope
 
-The first iteration is a proof of concept that establishes the full project structure through one vertical slice: Menu Management, Order Placement, an always-successful payment confirmation, a FIFO Kitchen Scheduler, and Capacity-Based Estimation (features 1 to 4). The goal is to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Priority Queuing, Kitchen Monitoring, and real Payment Management come next. See [assumptions.md](assumptions.md) for the simplifications this implies.
+The first iteration is a proof of concept that establishes the full project structure through one vertical slice: Menu Management, Order Placement, an always-successful payment confirmation, a FIFO Kitchen Scheduler, and Capacity-Based Estimation (features 1 to 4). The goal is to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Priority Queuing, Kitchen Monitoring, and real Payment Management come next. See [assumptions.md](docs/assumptions.md) for the simplifications this implies.
 
 ## Kitchen Rules
 
