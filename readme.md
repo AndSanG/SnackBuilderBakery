@@ -20,6 +20,51 @@ Each feature depends on the ones above it, so the table also reflects the build 
 
 The first iteration is a proof of concept that establishes the full project structure through one vertical slice: Menu Management, Order Placement, an always-successful payment confirmation, a FIFO Kitchen Scheduler, and Capacity-Based Estimation (features 1 to 4). The goal is to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Priority Queuing, Kitchen Monitoring, and real Payment Management come next. See [assumptions.md](docs/assumptions.md) for the simplifications this implies.
 
+## Getting Started
+
+Built with NestJS and TypeScript. Tests run on Jest.
+
+### Requirements
+
+- Node.js 20 or newer
+- npm 10 or newer
+
+### Install
+
+```bash
+npm install
+```
+
+### Compile
+
+```bash
+npm run build      # compile to dist/ with the Nest compiler
+```
+
+### Run
+
+```bash
+npm run start      # start the API
+npm run start:dev  # start in watch mode
+```
+
+The server listens on port 3000 by default. Override with the `PORT` environment variable.
+
+### Test
+
+```bash
+npm test           # run the test suite (random order)
+npm run test:cov   # run with a coverage report
+```
+
+### Layout
+
+```
+src/        application code, one folder per feature module
+docs/       design documents (requirements, contracts, decisions)
+readme.md   this file
+```
+
 ## Kitchen Rules
 
 - **Oven capacity:** 2 ovens × 3 trays = 6 concurrent baking slots
