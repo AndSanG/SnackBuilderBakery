@@ -23,7 +23,7 @@ export default tseslint.config(
   // Tests build ad-hoc stubs and cast freely; the no-unsafe-* family is noise
   // there. The promise rules stay on so a forgotten await still fails.
   {
-    files: ['**/*.spec.ts'],
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
