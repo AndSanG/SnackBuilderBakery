@@ -11,6 +11,7 @@ import { OrdersController } from './presentation/orders.controller';
 import { PlaceOrder } from './application/place-order';
 import { TrackOrder } from './application/track-order';
 import { ConfirmPayment } from './application/confirm-payment';
+import { ReconcileOrders } from './application/reconcile-orders';
 import { MenuCatalog, MENU_CATALOG } from './application/menu-catalog';
 import { OrderRepository, ORDER_REPOSITORY } from './application/order-repository';
 import { KitchenService, KITCHEN_SERVICE } from './application/kitchen-service';
@@ -48,6 +49,12 @@ import { InMemoryOrderRepository } from './infrastructure/in-memory-order-reposi
       useFactory: (orders: OrderRepository, kitchen: KitchenService) =>
         new ConfirmPayment(orders, kitchen),
       inject: [ORDER_REPOSITORY, KITCHEN_SERVICE],
+    },
+    {
+      provide: ReconcileOrders,
+      useFactory: (orders: OrderRepository, clock: Clock) =>
+        new ReconcileOrders(orders, clock),
+      inject: [ORDER_REPOSITORY, CLOCK],
     },
   ],
 })

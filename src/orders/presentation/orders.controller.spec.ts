@@ -2,6 +2,7 @@ import { OrdersController } from './orders.controller';
 import { PlaceOrder } from '../application/place-order';
 import { TrackOrder } from '../application/track-order';
 import { ConfirmPayment } from '../application/confirm-payment';
+import { ReconcileOrders } from '../application/reconcile-orders';
 import { InMemoryOrderRepository } from '../infrastructure/in-memory-order-repository';
 import { MenuCatalogAdapter } from '../../menu/infrastructure/menu-catalog.adapter';
 import { InMemoryMenuRepository } from '../../menu/infrastructure/in-memory-menu-repository';
@@ -13,7 +14,10 @@ import { OrderStatus } from '../domain/order';
 import { OrderNotFoundError } from '../application/order-errors';
 import { Category } from '../../shared/domain/category';
 
-const makeSUT = async (): Promise<{ sut: OrdersController }> => {
+const makeSUT = async (): Promise<{
+  sut: OrdersController;
+  clock: FakeClock;
+}> => {
   const menuRepo = new InMemoryMenuRepository();
   await menuRepo.add({
     id: 'cookie',
@@ -22,13 +26,15 @@ const makeSUT = async (): Promise<{ sut: OrdersController }> => {
     price: 250,
   });
   const orderRepo = new InMemoryOrderRepository();
-  const kitchen = new KitchenServiceAdapter(new Kitchen(), new FakeClock());
+  const clock = new FakeClock();
+  const kitchen = new KitchenServiceAdapter(new Kitchen(), clock);
   const sut = new OrdersController(
     new PlaceOrder(new MenuCatalogAdapter(menuRepo), orderRepo),
     new TrackOrder(orderRepo),
     new ConfirmPayment(orderRepo, kitchen),
+    new ReconcileOrders(orderRepo, clock),
   );
-  return { sut };
+  return { sut, clock };
 };
 
 describe('OrdersController', () => {
@@ -79,5 +85,20 @@ describe('OrdersController', () => {
     expect(confirmation.status).toBe(OrderStatus.InKitchen);
     expect(confirmation.estimatedReadyTime).toBeInstanceOf(Date);
     expect(tracked.status).toBe(OrderStatus.InKitchen);
+  });
+
+  it('marks a confirmed order ready once enough time passes and it is reconciled', async () => {
+    const { sut, clock } = await makeSUT();
+    const ticket = await sut.place({
+      items: [{ menuItemId: 'cookie', quantity: 1 }],
+      source: OrderSource.WalkIn,
+    });
+    await sut.confirm(ticket.orderId);
+
+    clock.advance(5); // a cookie bakes in 5 minutes
+    await sut.reconcile();
+
+    const tracked = await sut.track(ticket.orderId);
+    expect(tracked.status).toBe(OrderStatus.Ready);
   });
 });
