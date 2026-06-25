@@ -36,5 +36,6 @@ export const MENU_REPOSITORY = Symbol('MenuRepository');
       inject: [MENU_REPOSITORY],
     },
   ],
+  exports: [MENU_REPOSITORY],
 })
 export class MenuModule {}
