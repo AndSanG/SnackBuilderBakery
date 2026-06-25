@@ -1,4 +1,4 @@
-import { Order } from '../domain/order';
+import { Order, OrderStatus } from '../domain/order';
 import { OrderRepository } from '../application/order-repository';
 
 export class InMemoryOrderRepository implements OrderRepository {
@@ -10,5 +10,9 @@ export class InMemoryOrderRepository implements OrderRepository {
 
   async findById(id: string): Promise<Order | null> {
     return this.orders.get(id) ?? null;
+  }
+
+  async findByStatus(status: OrderStatus): Promise<Order[]> {
+    return [...this.orders.values()].filter((order) => order.status === status);
   }
 }

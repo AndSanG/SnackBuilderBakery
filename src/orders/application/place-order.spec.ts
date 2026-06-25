@@ -28,6 +28,10 @@ class OrderRepositorySpy implements OrderRepository {
   async findById(id: string): Promise<Order | null> {
     return this.savedOrders.find((o) => o.id === id) ?? null;
   }
+
+  async findByStatus(status: Order['status']): Promise<Order[]> {
+    return this.savedOrders.filter((o) => o.status === status);
+  }
 }
 
 const makeSUT = (): {
