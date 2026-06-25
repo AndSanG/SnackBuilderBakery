@@ -66,3 +66,45 @@ Across modules (consumer owns the contract):
 
 No cycles. Menu and Kitchen never depend on Orders.
 ```
+
+## Visual: cross-module dependencies
+
+Each edge is a consumer-owned port. The arrow points from the consumer that owns the contract to the provider that supplies the adapter.
+
+```mermaid
+graph LR
+  Orders -- MenuCatalog --> Menu
+  Orders -- KitchenScheduler --> Kitchen
+  Orders -- ReadyTimeEstimator --> Kitchen
+  Kitchen -- Clock --> Shared
+
+  classDef mod fill:#f5f5f5,stroke:#333,stroke-width:1px;
+  class Orders,Menu,Kitchen,Shared mod;
+```
+
+## Visual: clean architecture layers within a module
+
+Dependencies point inward. Nothing inner knows anything outer. Infrastructure and presentation sit on the outside; entities sit at the center.
+
+```mermaid
+graph TD
+  subgraph Frameworks_and_Drivers
+    INF[Infrastructure: in-memory repositories, SystemClock]
+    PRES[Presentation: controllers, DTOs]
+  end
+  subgraph Interface_Adapters
+    PORTS[Ports and adapters]
+  end
+  subgraph Application_Business_Rules
+    UC[Use cases]
+  end
+  subgraph Enterprise_Business_Rules
+    ENT[Entities: MenuItem, Order, Kitchen, Category rules]
+  end
+
+  PRES --> UC
+  INF --> PORTS
+  PORTS --> UC
+  UC --> ENT
+```
+
