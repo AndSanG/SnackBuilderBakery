@@ -4,7 +4,7 @@ The contracts that hold the system together, described as operations with inputs
 
 Two kinds of contract appear here:
 
-- Ports: the boundaries between layers and modules. A port is owned by its consumer and implemented by a provider (see [module-map.md](module-map.md)).
+- Ports: the boundaries between layers and modules, defined by the module that consumes them and implemented by the provider (see [module-map.md](module-map.md)). Each module exposes at most one port to its consumer; the boundary exists so consumers stay unit-testable with a small fake, not as inversion for its own sake.
 - Use case contracts: the command each use case accepts and the result or error it returns.
 
 ## Ports
@@ -46,21 +46,14 @@ Owned by Orders. Implemented by a Menu adapter. Exposes only what Orders needs t
 |-----------|-------|------------------|
 | findItem | an item id | the item's id, category, and price, or none |
 
-### KitchenScheduler
+### Kitchen
 
-Owned by Orders. Implemented by a Kitchen adapter.
+Owned by Orders. Implemented by a Kitchen adapter. One port with both operations Orders needs from the kitchen.
 
 | Operation | Input | Output / Outcome |
 |-----------|-------|------------------|
 | enqueue | the bakeable items of a confirmed order, each carrying its category and owning order reference | the items placed in the kitchen queue |
-
-### ReadyTimeEstimator
-
-Owned by Orders. Implemented by a Kitchen adapter. Pure: it reads kitchen state but never changes it.
-
-| Operation | Input | Output / Outcome |
-|-----------|-------|------------------|
-| estimate | the bakeable items of an order | the estimated ready time (a future instant) |
+| estimate | the bakeable items of an order | the estimated ready time (a future instant). Pure: reads kitchen state but never changes it |
 
 ## Use case contracts
 
