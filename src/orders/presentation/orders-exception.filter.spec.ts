@@ -2,6 +2,7 @@ import { ArgumentsHost } from '@nestjs/common';
 import { OrdersExceptionFilter } from './orders-exception.filter';
 import {
   EmptyOrderError,
+  OrderAlreadyConfirmedError,
   OrderNotFoundError,
   UnknownMenuItemError,
 } from '../application/order-errors';
@@ -50,5 +51,16 @@ describe('OrdersExceptionFilter', () => {
     new OrdersExceptionFilter().catch(new UnknownMenuItemError('ghost'), host);
 
     expect(sent.status).toBe(400);
+  });
+
+  it('maps an already-confirmed error to 409', () => {
+    const { host, sent } = makeHost();
+
+    new OrdersExceptionFilter().catch(
+      new OrderAlreadyConfirmedError('o-1'),
+      host,
+    );
+
+    expect(sent.status).toBe(409);
   });
 });

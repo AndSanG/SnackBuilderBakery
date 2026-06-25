@@ -1,13 +1,17 @@
 import { OrdersController } from './orders.controller';
 import { PlaceOrder } from '../application/place-order';
 import { TrackOrder } from '../application/track-order';
+import { ConfirmPayment } from '../application/confirm-payment';
 import { InMemoryOrderRepository } from '../infrastructure/in-memory-order-repository';
 import { MenuCatalogAdapter } from '../../menu/infrastructure/menu-catalog.adapter';
 import { InMemoryMenuRepository } from '../../menu/infrastructure/in-memory-menu-repository';
+import { KitchenServiceAdapter } from '../../kitchen/infrastructure/kitchen-service.adapter';
+import { Kitchen } from '../../kitchen/domain/kitchen';
+import { FakeClock } from '../../shared/clock/fake-clock';
 import { OrderSource } from '../domain/order-source';
 import { OrderStatus } from '../domain/order';
 import { OrderNotFoundError } from '../application/order-errors';
-import { Category } from '../../menu/domain/menu-item';
+import { Category } from '../../shared/domain/category';
 
 const makeSUT = async (): Promise<{ sut: OrdersController }> => {
   const menuRepo = new InMemoryMenuRepository();
@@ -18,9 +22,11 @@ const makeSUT = async (): Promise<{ sut: OrdersController }> => {
     price: 250,
   });
   const orderRepo = new InMemoryOrderRepository();
+  const kitchen = new KitchenServiceAdapter(new Kitchen(), new FakeClock());
   const sut = new OrdersController(
     new PlaceOrder(new MenuCatalogAdapter(menuRepo), orderRepo),
     new TrackOrder(orderRepo),
+    new ConfirmPayment(orderRepo, kitchen),
   );
   return { sut };
 };
@@ -58,5 +64,20 @@ describe('OrdersController', () => {
     await expect(sut.track('missing')).rejects.toBeInstanceOf(
       OrderNotFoundError,
     );
+  });
+
+  it('confirms an order into the kitchen and reflects it when tracked', async () => {
+    const { sut } = await makeSUT();
+    const ticket = await sut.place({
+      items: [{ menuItemId: 'cookie', quantity: 1 }],
+      source: OrderSource.WalkIn,
+    });
+
+    const confirmation = await sut.confirm(ticket.orderId);
+    const tracked = await sut.track(ticket.orderId);
+
+    expect(confirmation.status).toBe(OrderStatus.InKitchen);
+    expect(confirmation.estimatedReadyTime).toBeInstanceOf(Date);
+    expect(tracked.status).toBe(OrderStatus.InKitchen);
   });
 });

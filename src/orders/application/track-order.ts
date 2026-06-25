@@ -5,8 +5,7 @@ import { OrderNotFoundError } from './order-errors';
 export interface OrderStatusView {
   orderId: string;
   status: OrderStatus;
-  // TODO: add estimatedReadyTime once ConfirmPayment (pending the Kitchen)
-  // sets it on the order. Omitted now because the field does not exist yet.
+  estimatedReadyTime?: Date;
 }
 
 export class TrackOrder {
@@ -17,6 +16,10 @@ export class TrackOrder {
     if (order === null) {
       throw new OrderNotFoundError(id);
     }
-    return { orderId: order.id, status: order.status };
+    return {
+      orderId: order.id,
+      status: order.status,
+      estimatedReadyTime: order.estimatedReadyTime,
+    };
   }
 }
