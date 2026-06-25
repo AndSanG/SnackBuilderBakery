@@ -5,7 +5,7 @@ Good practices for writing commit messages here. For when to commit and at what 
 ## Subject line
 
 - Use the form `type(scope): summary`, for example `feat(menu): add ViewMenu use case`.
-- Types: `feat` (a behavior), `fix` (a bug), `refactor` (no behavior change), `test`, `docs`, `chore` (tooling, deps, scaffolding).
+- Types: `feat` (a behavior), `fix` (a bug), `refactor` (no behavior change), `test`, `docs`, `chore` (tooling, deps, scaffolding), `ci` (CI and workflow config).
 - Scope is the feature or area, for example `menu`, `kitchen`, or omitted for repo-wide changes.
 - Write the summary in the imperative mood: "add", "fix", "move", not "added" or "adds".
 - Keep it short (aim for 150 characters, hard cap around 200). No trailing period.
