@@ -1,0 +1,67 @@
+import { TrackOrder } from './track-order';
+import { OrderRepository } from './order-repository';
+import { OrderNotFoundError } from './order-errors';
+import { Order, OrderStatus } from '../domain/order';
+import { OrderSource } from '../domain/order-source';
+import { Category } from '../../menu/domain/menu-item';
+
+class OrderRepositorySpy implements OrderRepository {
+  findByIdCallCount = 0;
+  private order: Order | null = null;
+
+  async save(): Promise<void> {
+    // unused here
+  }
+
+  async findById(): Promise<Order | null> {
+    this.findByIdCallCount += 1;
+    return this.order;
+  }
+
+  stubFindById(order: Order | null): void {
+    this.order = order;
+  }
+}
+
+const existingOrder: Order = {
+  id: 'order-1',
+  items: [{ id: 'item-1', category: Category.Cookie }],
+  source: OrderSource.WalkIn,
+  status: OrderStatus.AwaitingPayment,
+  totalPrice: 250,
+};
+
+const makeSUT = (): { sut: TrackOrder; repository: OrderRepositorySpy } => {
+  const repository = new OrderRepositorySpy();
+  const sut = new TrackOrder(repository);
+  return { sut, repository };
+};
+
+describe('TrackOrder', () => {
+  it('does not query the repository upon creation', () => {
+    const { repository } = makeSUT();
+
+    expect(repository.findByIdCallCount).toBe(0);
+  });
+
+  it('returns the order id and status when the order exists', async () => {
+    const { sut, repository } = makeSUT();
+    repository.stubFindById(existingOrder);
+
+    const result = await sut.execute('order-1');
+
+    expect(result).toEqual({
+      orderId: 'order-1',
+      status: OrderStatus.AwaitingPayment,
+    });
+  });
+
+  it('fails with a not found error when the order does not exist', async () => {
+    const { sut, repository } = makeSUT();
+    repository.stubFindById(null);
+
+    await expect(sut.execute('missing')).rejects.toBeInstanceOf(
+      OrderNotFoundError,
+    );
+  });
+});
