@@ -12,6 +12,14 @@ class MenuRepositorySpy implements MenuRepository {
   async add(item: MenuItem): Promise<void> {
     this.addedItems.push(item);
   }
+
+  async findById(): Promise<MenuItem | null> {
+    return null;
+  }
+
+  async update(): Promise<void> {
+    // unused by AddMenuItem
+  }
 }
 
 const validData = {

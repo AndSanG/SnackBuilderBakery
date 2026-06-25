@@ -7,4 +7,6 @@ import { MenuItem } from '../domain/menu-item';
 export interface MenuRepository {
   getAll(): Promise<MenuItem[]>;
   add(item: MenuItem): Promise<void>;
+  findById(id: string): Promise<MenuItem | null>;
+  update(item: MenuItem): Promise<void>;
 }

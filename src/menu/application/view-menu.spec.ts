@@ -15,6 +15,14 @@ class MenuRepositorySpy implements MenuRepository {
     // ponytail: unused by ViewMenu, present only to satisfy the port
   }
 
+  async findById(): Promise<MenuItem | null> {
+    return null;
+  }
+
+  async update(): Promise<void> {
+    // unused by ViewMenu
+  }
+
   stubGetAll(items: MenuItem[]): void {
     this.result = items;
   }
