@@ -1,0 +1,13 @@
+import { MenuItem } from '../domain/menu-item';
+
+/**
+ * Persistence port for menu items, owned by the Menu module.
+ * Grows one operation at a time as use cases require them.
+ */
+export interface MenuRepository {
+  getAll(): Promise<MenuItem[]>;
+  add(item: MenuItem): Promise<void>;
+  findById(id: string): Promise<MenuItem | null>;
+  update(item: MenuItem): Promise<void>;
+  remove(id: string): Promise<void>;
+}
