@@ -15,6 +15,8 @@ This is adapted from a generic TDD and Clean Architecture runbook (originally wr
 
 ## The TDD loop
 
+TDD is doubly important when an AI agent is doing the implementation. AI-generated code can be convincing but subtly wrong: a failing test written before the code is the only reliable check that the implementation satisfies the requirement rather than the agent's own assumptions. Tests also give the agent structured, unambiguous context to work from, and human review of both tests and code remains necessary to catch cases where an agent writes code merely to make a test pass rather than to solve the problem.
+
 Every unit of behavior is built in this cycle:
 
 1. **Red.** Write one failing test. Add the minimum stub needed for it to compile, then run it and confirm it fails for the expected reason.

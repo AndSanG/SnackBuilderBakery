@@ -24,7 +24,19 @@ The current build covers all seven features end to end: Menu Management, Order P
 
 Built with NestJS and TypeScript. Tests run on Jest. New to the codebase? Read [walkthrough.md](walkthrough.md) for a guided tour that traces one order through every layer.
 
-### Requirements
+### Docker (recommended)
+
+```bash
+docker compose up -d          # build and start the API + Prometheus
+docker compose logs -f api    # stream structured JSON logs from the API
+docker compose down           # tear down
+```
+
+- API: `http://localhost:3000`
+- Prometheus metrics: `http://localhost:3000/metrics`
+- Prometheus UI: `http://localhost:9090`
+
+### Requirements (local)
 
 - Node.js 20 or newer
 - npm 10 or newer
