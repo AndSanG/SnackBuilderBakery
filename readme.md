@@ -34,6 +34,8 @@ Built with NestJS and TypeScript. Tests run on Jest.
 
 **New to the codebase?** Start with [walkthrough.md](walkthrough.md) — it traces one order through every layer with annotated code and explains the two core design ideas (poll-based kitchen, Clock port).
 
+**Reviewing the submission?** See [solution.md](solution.md) — maps every challenge requirement to where it is implemented.
+
 ### Docker (recommended)
 
 ```bash
