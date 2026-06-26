@@ -38,6 +38,10 @@ class OrderRepositorySpy implements OrderRepository {
     return this.order;
   }
 
+  async updateEstimateIfInKitchen(): Promise<void> {
+    // findByStatus returns [], so the ripple never reaches this spy.
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }

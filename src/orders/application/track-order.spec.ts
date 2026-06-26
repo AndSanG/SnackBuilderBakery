@@ -26,6 +26,10 @@ class OrderRepositorySpy implements OrderRepository {
     return null;
   }
 
+  async updateEstimateIfInKitchen(): Promise<void> {
+    // unused here
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }

@@ -38,4 +38,23 @@ export class InMemoryOrderRepository implements OrderRepository {
     this.orders.set(id, claimed);
     return claimed;
   }
+
+  // Same synchronous get/check/set as claimForPayment: no await between the
+  // InKitchen check and the write, so the event loop cannot slip a status
+  // change (ReconcileOrders flipping the order to Ready) in between. A stale
+  // VIP-ripple estimate therefore can never resurrect a Ready order back to
+  // InKitchen.
+  //
+  // ponytail: in-memory compare-and-set. A database does the same with
+  // UPDATE ... SET estimatedReadyTime=? WHERE id=? AND status='InKitchen'.
+  async updateEstimateIfInKitchen(
+    id: string,
+    estimatedReadyTime: Date,
+  ): Promise<void> {
+    const order = this.orders.get(id);
+    if (!order || order.status !== OrderStatus.InKitchen) {
+      return;
+    }
+    this.orders.set(id, { ...order, estimatedReadyTime });
+  }
 }

@@ -36,6 +36,10 @@ class OrderRepositorySpy implements OrderRepository {
   async claimForPayment(): Promise<Order | null> {
     return null;
   }
+
+  async updateEstimateIfInKitchen(): Promise<void> {
+    // unused here
+  }
 }
 
 const makeSUT = (): {

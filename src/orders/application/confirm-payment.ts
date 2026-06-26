@@ -88,6 +88,12 @@ export class ConfirmPayment {
   // readyTimes() and findByStatus(), its newly-added order might not appear in
   // this ripple. That order's own ConfirmPayment runs its own ripple afterward,
   // so estimates converge without any extra coordination.
+  //
+  // The estimate is written through updateEstimateIfInKitchen, not save: the
+  // inKitchen list is a snapshot, and a concurrent ReconcileOrders may flip one
+  // of those orders to Ready before we reach it here. The guarded update writes
+  // only while the order is still InKitchen, so a stale estimate can never
+  // resurrect a Ready order back into the kitchen.
   private async refreshBumpedEstimates(justConfirmedId: string): Promise<void> {
     const readyTimes = await this.kitchen.readyTimes();
     const inKitchen = await this.orders.findByStatus(OrderStatus.InKitchen);
@@ -101,7 +107,7 @@ export class ConfirmPayment {
         refreshed &&
         refreshed.getTime() !== other.estimatedReadyTime?.getTime()
       ) {
-        await this.orders.save({ ...other, estimatedReadyTime: refreshed });
+        await this.orders.updateEstimateIfInKitchen(other.id, refreshed);
       }
     }
   }
