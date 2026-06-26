@@ -1,11 +1,15 @@
 # Spike: data structure alternatives
 
-Explores whether the two simple data structures in the kitchen and order
-repository should be replaced with their textbook "faster" counterparts. Each
-alternative is implemented behind a shared interface under [spike/](../../spike),
-proven equivalent by a test, and benchmarked. The conclusion for both: keep the
-simple structure. The faster-looking alternatives do not pay off for the access
-patterns this system actually has.
+Explores whether the simple structures in the kitchen and order repository should
+be replaced with their textbook "faster" counterparts, and how the oven model
+would change under more items or more ovens. Each measurable alternative is
+implemented behind a shared interface under [spike/](../../spike), proven
+equivalent by a test, and benchmarked. The conclusion throughout: keep the simple
+structure at the current scale, and the doc records the exact trigger that would
+flip each decision. The faster-looking alternatives do not pay off for the access
+patterns and sizes this system actually has.
+
+Three parts: the waiting queue, the status lookup, and the oven model.
 
 Reproduce:
 
@@ -176,6 +180,103 @@ seam (an abstraction with one production implementation) stays on this branch
 and does not merge: introducing it for real would be the speculative
 abstraction the conclusion argues against.
 
+## Oven-side alternatives
+
+The two subsystems above are about *how items are stored*. A separate question is
+*how the ovens are modeled* as the kitchen handles more items or more ovens. Five
+levers, of which two are measurable data-structure swaps and three are model or
+feature changes where "benchmark" means throughput or does not apply.
+
+Reproduce the two measured ones:
+
+```bash
+npx jest --config spike/jest-spike.json   # oven equivalence tests
+npx ts-node spike/oven/bench.ts
+```
+
+### Lever 1 (measured): slot picker, array scan vs min-heap
+
+The estimator assigns each item to the earliest-free slot. With S ovens that is
+a linear `Math.min` scan, O(S) per item. The alternative keys the slot free-times
+in a binary min-heap, O(log S). Forward-simulating 50000 jobs:
+
+```
+picker          S (ovens)   sim ms
+ArrayScan       6               0.7820
+MinHeap         6               0.6546
+ArrayScan       64              3.3874
+MinHeap         64              0.7318
+ArrayScan       512            19.7638
+MinHeap         512             1.1166
+ArrayScan       4096          151.7581
+MinHeap         4096            2.0032
+```
+
+**Decision: keep the array scan.** At S = 6 the two are tied (the scan is noise).
+The heap only pays off as the oven count climbs: 4.6x at 64 ovens, 75x at 4096,
+with the crossover around a few dozen ovens. A real bakery does not have dozens
+of ovens, so the scan is correct today. This is the exact upgrade trigger the
+complexity notes call out: it is driven by **more ovens**, not more items.
+
+### Lever 2 (measured): batch baking, the throughput lever
+
+This is a model change, not a structure swap: a tray bakes up to `traySize`
+same-bake-time items at once instead of one item per slot. Measured by makespan
+(simulated minutes to finish all items), 6 ovens, tray of 12:
+
+```
+items     single min    batched min   speedup
+60        140           20            7.0x
+600       1150          105           11.0x
+6000      11750         995           11.8x
+```
+
+**This is the lever for "more items".** Batching gives roughly an order of
+magnitude more throughput on the same six ovens, and the gain grows with volume.
+The cost is real: scheduling stops being "assign items to slots" and becomes a
+packing problem (group by bake time, decide whether to start a partial tray or
+wait to fill one). Worth it only when item volume is the measured bottleneck, but
+when it is, no other lever comes close. Adopting it would also change the domain
+model (a slot holds a batch, the estimate reasons about batches), so it is a
+feature, not an optimization.
+
+### Levers 3 to 5 (design analysis, not benchmarked)
+
+These change behavior or constraints, not performance, so there is nothing to
+time. They are recorded with their triggers.
+
+- **Oven identity (2x3).** Today slots are a flat interchangeable array. Modeling
+  `ovens[2].trays[3]` is required the moment a rule *binds* trays within an oven
+  (one oven, one temperature, so its trays must share a category) or an oven goes
+  offline as a unit. It is also a prerequisite for Kitchen Monitoring ("what is in
+  oven 1"). Cost: scheduling gains an eligibility constraint, turning a free
+  assignment into a constrained one. Trigger: monitoring, or any per-oven rule.
+
+- **Heterogeneous ovens.** Today every slot is identical. Real equipment is not: a
+  convection oven is faster, a deck oven is bread-only. This makes `bakeDuration`
+  a function of (oven, category), and the greedy "earliest free slot" must also
+  check "can this oven bake this item", edging toward a constrained assignment
+  solver. Trigger: the real kitchen has non-uniform ovens.
+
+- **Reservation timeline.** Today the future is re-simulated from current state on
+  every estimate. The alternative keeps a persistent per-oven timeline of booked
+  intervals, so an estimate reads the schedule instead of replaying it. Trigger:
+  estimates becoming hot enough (huge Q and a high query rate) that re-simulation
+  costs too much. Cost: a persistent schedule to keep consistent, exactly the
+  stateful complexity the poll-based design avoids on purpose. This is the only
+  one of the three with a performance angle, and it only appears under load the
+  POC will not see.
+
+### Which lever for which pressure
+
+| Pressure | Lever |
+| --- | --- |
+| More **ovens** | min-heap slot picker (lever 1) |
+| More **items** | batch baking (lever 2) |
+| Monitoring or per-oven rules | oven identity (lever 3) |
+| Real non-uniform equipment | heterogeneous ovens (lever 4) |
+| Huge Q and query rate | reservation timeline (lever 5) |
+
 ## Summary
 
 Both subsystems keep their current structure. The value of the spike is the
@@ -184,9 +285,19 @@ not help a non-selective query. Both conclusions are counterintuitive enough
 that writing them down prevents a well-meaning future "optimization" that
 regresses performance and adds complexity.
 
-The two genuine upgrade triggers, should they ever arrive:
+The oven model keeps its flat single-item slots too, with batch baking measured
+as the one lever that genuinely scales item throughput (an order of magnitude),
+held back only because it is a domain change, not a free optimization.
 
-- A **variable oven count** would make the estimate's inner `Math.min` over slot
-  free-times matter; that specific scan becomes a min-heap keyed on free-time.
+The genuine upgrade triggers, should they ever arrive:
+
+- **More ovens** (dozens or more) make the estimate's inner `Math.min` over slot
+  free-times matter; that scan becomes a min-heap keyed on free-time (measured
+  crossover around a few dozen ovens).
+- **More items** as the throughput bottleneck justify batch baking (trays of
+  same-bake-time items), the single highest-leverage change measured here.
 - A **selective status query** (for example "find the one order pending a manual
   refund among millions") would justify an index, best provided by the database.
+- **Per-oven rules, real heterogeneous equipment, or estimate load** would justify
+  oven identity, per-(oven, category) bake times, or a reservation timeline
+  respectively (see the oven-side section).
