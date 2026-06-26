@@ -42,6 +42,11 @@ class KitchenServiceSpy implements KitchenService {
     return this.estimate;
   }
 
+  async readyTimes(): Promise<Map<string, Date>> {
+    this.calls.push('readyTimes');
+    return new Map();
+  }
+
   stubEstimate(time: Date): void {
     this.estimate = time;
   }
@@ -106,7 +111,7 @@ describe('ConfirmPayment', () => {
 
     await sut.execute('order-1');
 
-    expect(kitchen.calls).toEqual(['estimate', 'enqueue']);
+    expect(kitchen.calls).toEqual(['estimate', 'enqueue', 'readyTimes']);
   });
 
   it('moves the order into the kitchen with the estimated ready time', async () => {

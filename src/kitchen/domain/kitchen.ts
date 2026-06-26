@@ -76,6 +76,41 @@ export class Kitchen {
     return new Date(latestFinish);
   }
 
+  // Forward-simulates the current state (no new items) and returns when each
+  // order in the kitchen will be ready: the finish time of its last item. Used
+  // to refresh stored estimates after a higher-priority order reorders the
+  // queue (the VIP ripple).
+  //
+  // ponytail: this mirrors estimateReadyTime's slot-assignment loop. Both order
+  // the queue through the same policy, so they stay consistent; keep them in
+  // sync if the scheduling math changes.
+  readyTimes(now: Date): Map<string, Date> {
+    const slotFreeTimes = this.slots.map((slot) =>
+      slot === null ? now.getTime() : this.finishTimeOf(slot),
+    );
+    const finishByOrder = new Map<string, number>();
+    const record = (orderId: string, finish: number): void => {
+      finishByOrder.set(
+        orderId,
+        Math.max(finishByOrder.get(orderId) ?? finish, finish),
+      );
+    };
+
+    for (const slot of this.slots) {
+      if (slot !== null) {
+        record(slot.item.orderId, this.finishTimeOf(slot));
+      }
+    }
+    for (const item of this.policy.order(this.queue)) {
+      const earliest = Math.min(...slotFreeTimes);
+      const slot = slotFreeTimes.indexOf(earliest);
+      const finish = earliest + bakeDurationMinutes[item.category] * 60_000;
+      slotFreeTimes[slot] = finish;
+      record(item.orderId, finish);
+    }
+    return new Map([...finishByOrder].map(([id, ms]) => [id, new Date(ms)]));
+  }
+
   private completeFinished(now: Date): void {
     this.slots = this.slots.map((slot) =>
       slot !== null && this.isDone(slot, now) ? null : slot,

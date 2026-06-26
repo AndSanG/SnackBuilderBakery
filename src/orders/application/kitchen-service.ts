@@ -17,4 +17,7 @@ export interface KitchenItem {
 export interface KitchenService {
   enqueue(items: KitchenItem[]): Promise<void>;
   estimateReadyTime(items: KitchenItem[]): Promise<Date>;
+  // Current ready time of every order in the kitchen, keyed by order id. Used
+  // to refresh estimates after a higher-priority order reorders the queue.
+  readyTimes(): Promise<Map<string, Date>>;
 }

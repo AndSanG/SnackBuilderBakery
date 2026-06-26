@@ -23,4 +23,10 @@ export class KitchenServiceAdapter implements KitchenService {
     this.kitchen.reconcile(now);
     return this.kitchen.estimateReadyTime(items, now);
   }
+
+  async readyTimes(): Promise<Map<string, Date>> {
+    const now = this.clock.now();
+    this.kitchen.reconcile(now);
+    return this.kitchen.readyTimes(now);
+  }
 }

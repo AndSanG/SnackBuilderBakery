@@ -46,10 +46,34 @@ export class ConfirmPayment {
     };
     await this.orders.save(confirmed);
 
+    await this.refreshBumpedEstimates(order.id);
+
     return {
       orderId: order.id,
       status: OrderStatus.InKitchen,
       estimatedReadyTime,
     };
+  }
+
+  // VIP ripple: enqueueing a higher-priority order can push lower-priority
+  // orders back in the queue, so their stored estimates go stale. Recompute
+  // every in-kitchen order's ready time from the new queue and save the ones
+  // that changed.
+  private async refreshBumpedEstimates(justConfirmedId: string): Promise<void> {
+    const readyTimes = await this.kitchen.readyTimes();
+    const inKitchen = await this.orders.findByStatus(OrderStatus.InKitchen);
+
+    for (const other of inKitchen) {
+      if (other.id === justConfirmedId) {
+        continue;
+      }
+      const refreshed = readyTimes.get(other.id);
+      if (
+        refreshed &&
+        refreshed.getTime() !== other.estimatedReadyTime?.getTime()
+      ) {
+        await this.orders.save({ ...other, estimatedReadyTime: refreshed });
+      }
+    }
   }
 }
