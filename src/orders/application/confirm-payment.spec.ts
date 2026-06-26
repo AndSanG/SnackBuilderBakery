@@ -30,6 +30,14 @@ class OrderRepositorySpy implements OrderRepository {
     return [];
   }
 
+  async claimForPayment(): Promise<Order | null> {
+    if (!this.order || this.order.status !== OrderStatus.AwaitingPayment) {
+      return null;
+    }
+    this.order = { ...this.order, status: OrderStatus.PaymentProcessing };
+    return this.order;
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }
@@ -151,7 +159,8 @@ describe('ConfirmPayment', () => {
       }),
     ).rejects.toBeInstanceOf(PaymentDeclinedError);
 
-    expect(orders.savedOrders).toEqual([]); // never saved
     expect(kitchen.calls).toEqual([]); // never enqueued
+    // the claim is released back to AwaitingPayment so the customer can retry
+    expect(orders.savedOrders.at(-1)?.status).toBe(OrderStatus.AwaitingPayment);
   });
 });

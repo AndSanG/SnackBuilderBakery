@@ -4,6 +4,8 @@ import { PaymentRecord } from './payment';
 
 export enum OrderStatus {
   AwaitingPayment = 'AwaitingPayment',
+  // Transient: claimed for payment, so a second concurrent confirm is rejected.
+  PaymentProcessing = 'PaymentProcessing',
   InKitchen = 'InKitchen',
   Ready = 'Ready',
 }

@@ -22,6 +22,10 @@ class OrderRepositorySpy implements OrderRepository {
     return [];
   }
 
+  async claimForPayment(): Promise<Order | null> {
+    return null;
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }
