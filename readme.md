@@ -92,7 +92,7 @@ npm run test:integration  # Prisma repository tests (skips gracefully without DA
 
 ### Manual testing
 
-Start the server (`npm run start` or `docker compose up -d`), then open `public/tester.html` directly in a browser. It covers every endpoint — add menu items, place and confirm orders, track status, monitor the kitchen — with no Postman or curl required.
+Start the server (`npm run start` or `docker compose up -d`), then open `http://localhost:3000/api` in a browser. The Swagger UI covers every endpoint — add menu items, place and confirm orders, track status, monitor the kitchen — with request bodies, examples, and live execution built in.
 
 The one caveat: the real clock is used, so an order only becomes `Ready` after its bake time has actually elapsed. Use the e2e suite (`npm run test:e2e`) when you need to verify scheduling behaviour without waiting. Full use-case coverage map is in [docs/testing-strategy.md](docs/testing-strategy.md).
 
