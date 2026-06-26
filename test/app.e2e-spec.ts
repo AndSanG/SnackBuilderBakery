@@ -119,6 +119,16 @@ describe('Bakery (e2e)', () => {
     await request(server).post(`/orders/${orderId}/confirm`).send(pay).expect(409);
   });
 
+  it('exposes the project version at /version', async () => {
+    const res = await request(app.getHttpServer()).get('/version').expect(200);
+    expect(res.body).toHaveProperty('version');
+  });
+
+  it('exposes Prometheus metrics at /metrics', async () => {
+    const res = await request(app.getHttpServer()).get('/metrics').expect(200);
+    expect(res.headers['content-type']).toMatch(/text\/plain/);
+  });
+
   it('declines an underpaid order with 402 and keeps it awaiting payment', async () => {
     const server = app.getHttpServer();
     const menuItemId = await createCookie();
