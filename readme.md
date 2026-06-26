@@ -5,7 +5,7 @@
 ![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791?logo=postgresql&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Version](https://img.shields.io/badge/version-0.2.2-blue)
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
 
 Backend API for order management, storefront operations, and a priority-based kitchen scheduler.
@@ -132,6 +132,25 @@ readme.md        this file
 - Robust automated testing: suite verifies all scheduling and order flows
 - Version control: clear commit history, incremental delivery
 - Docker Compose: environment setup and observability
+
+## CI/CD
+
+Every pull request runs five checks via GitHub Actions (`.github/workflows/ci.yml`):
+
+| Check | What it enforces |
+|---|---|
+| `version-bump` | `package.json` version must be higher than `master` |
+| `commitlint` | All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format |
+| `lint` | ESLint passes with no errors |
+| `test` | Build compiles, unit tests pass at ≥ 90% coverage, e2e suite passes |
+| `docker` | Image builds successfully (runs after lint + test) |
+
+On merge to `master` the `docker` job also pushes the image to the GitHub Container Registry:
+
+```
+ghcr.io/andgang/snackbuilderbakery:latest
+ghcr.io/andgang/snackbuilderbakery:<version>
+```
 
 ## Backlog
 
