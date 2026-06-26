@@ -80,7 +80,7 @@ The server listens on port 3000 by default. Override with the `PORT` environment
 npm test                  # unit tests (random order, in-memory, no DB needed)
 npm run test:cov          # with coverage report
 npm run test:e2e          # HTTP end-to-end suite (spins up the NestJS app)
-npm run test:integration  # Prisma repository tests (requires DATABASE_URL)
+npm run test:integration  # Prisma repository tests (skips gracefully without DATABASE_URL)
 ```
 
 ### Database (local)
