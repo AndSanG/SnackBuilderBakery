@@ -12,10 +12,11 @@ Scope is the current iteration (Menu, Order Placement, FIFO Kitchen Scheduler, C
 | `MenuItem` | id, name, category, price | Core storefront entity. Price is integer cents. |
 | `OrderSource` | Vip, AppDelivery, WalkIn | Where the order came from. |
 | `PriorityTier` | Tier1, Tier2, Tier3 | Not a stored field. Derived from `OrderSource` on read (Vip to Tier1, AppDelivery to Tier2, WalkIn to Tier3). |
-| `OrderItem` | id, category, bakeDuration | The unit that bakes. One item occupies one oven slot. |
+| `OrderItem` | id, category | The unit that bakes. One item occupies one oven slot. Bake duration is derived from `category` at runtime, never stored. |
 | `Order` | id, items, source, status, totalPrice, estimatedReadyTime | Aggregate root for an order. Priority tier is derived from `source`, not stored. |
-| `OrderStatus` | AwaitingPayment, InKitchen, Ready | Minimal lifecycle for this iteration. |
-| `BakingItem` | orderItem, startedAt | `finishAt` is derived as `startedAt + bakeDuration`. No stored end time. |
+| `OrderStatus` | AwaitingPayment, PaymentProcessing, InKitchen, Ready | Transient `PaymentProcessing` state is claimed atomically when payment begins, preventing concurrent charges on the same order. |
+| `BakeableItem` | id, orderId, category, priority | The item shape the kitchen works with. Produced from `OrderItem` when an order is confirmed. |
+| `BakingItem` | item: BakeableItem, startedAt | Internal kitchen type. `finishAt` is derived as `startedAt + bakeDuration(item.category)`. No stored end time. |
 | `Kitchen` | slots (6, each a `BakingItem` or empty), queue (waiting items) | The single type that owns all kitchen state and scheduling. Holds the six slots and the waiting queue directly. Six flat slots for now (see Deferred modeling decisions). |
 
 ### Rules captured in the domain

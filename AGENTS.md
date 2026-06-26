@@ -40,4 +40,4 @@ Follow them. If a change would violate either, stop and reconsider the change.
 
 ## Stack
 
-NestJS and TypeScript, tested with Jest. Persistence is in-memory behind repository ports for now (a real database is in the backlog). The current time is provided by a `Clock` port so it can be controlled in tests.
+NestJS and TypeScript, tested with Jest. Persistence is backed by PostgreSQL via Prisma when `DATABASE_URL` is set; both `PrismaMenuRepository` and `PrismaOrderRepository` implement the existing ports. When `DATABASE_URL` is absent the modules fall back to in-memory implementations, which is the default for unit tests. The current time is provided by a `Clock` port so it can be controlled in tests.
