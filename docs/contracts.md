@@ -52,8 +52,8 @@ Owned by Orders. Implemented by a Kitchen adapter. One port with both operations
 
 | Operation | Input | Output / Outcome |
 |-----------|-------|------------------|
-| enqueue | the bakeable items of a confirmed order, each carrying its category and owning order reference | the items placed in the kitchen queue |
-| estimate | the bakeable items of an order | the estimated ready time (a future instant). Pure: reads kitchen state but never changes it |
+| enqueueAndEstimate | the bakeable items of a confirmed order, each carrying its category, owning order reference, and priority | the estimated ready time. Enqueue and estimate are one atomic call so two simultaneous confirmations cannot both estimate before either enqueues |
+| readyTimes | none | current estimated ready time of every order still in the kitchen, keyed by order id. Used by ReconcileOrders to check liveness and by ConfirmPayment to refresh estimates after a VIP reorders the queue |
 
 ## Use case contracts
 
@@ -66,6 +66,5 @@ Owned by Orders. Implemented by a Kitchen adapter. One port with both operations
 | PlaceOrder | requested items (item id and quantity each), order source | a ticket: order reference and total price | unknown item, empty request |
 | ConfirmPayment | order reference, payment (cash or card) | a confirmation: order reference, status, estimated ready time, settled payment | not found, already confirmed, payment declined |
 | TrackOrder | order reference | order reference, status, estimated ready time | not found |
-| ReconcileKitchen | the current instant | the kitchen advanced: finished items completed, free slots filled from the queue | none |
-| EstimateOrderReadyTime | an order's items, current kitchen state, the current instant | the estimated ready time | none |
+| ReconcileOrders | none (reads the clock and calls the Kitchen port internally) | orders advanced from InKitchen to Ready when their live kitchen finish time has passed | none |
 | MonitorKitchen | the current instant | a view: two ovens of three trays (the item baking in each and its ready time) and the waiting items in bake order | none |

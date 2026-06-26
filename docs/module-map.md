@@ -25,7 +25,7 @@ Provides an adapter implementing Orders' `MenuCatalog` port.
 ### OrdersModule
 
 - Domain: `Order`, `OrderItem`, `OrderSource`, `OrderStatus` (priority tier is derived from source, not a stored field)
-- Application: `PlaceOrder`, `ConfirmPayment`, `TrackOrder`; owns the `OrderRepository`, `MenuCatalog`, and `Kitchen` ports
+- Application: `PlaceOrder`, `ConfirmPayment`, `TrackOrder`, `ReconcileOrders`; owns the `OrderRepository`, `MenuCatalog`, and `Kitchen` ports
 - Infrastructure: `InMemoryOrderRepository` (implements `OrderRepository`)
 - Presentation: `OrdersController` and DTOs
 
@@ -34,7 +34,7 @@ The only cross-module consumer. No module depends on Orders.
 ### KitchenModule
 
 - Domain: `Kitchen` (the 6 slots and the waiting queue, plus the scheduling logic over them) and `BakingItem`
-- Application: `ReconcileKitchen`, `EstimateOrderReadyTime`; consumes the `Clock` port
+- Application: `MonitorKitchen`; consumes the `Clock` port
 - Infrastructure: in-memory kitchen state held as a single instance
 
 Provides the adapter implementing Orders' `Kitchen` port.
@@ -87,35 +87,9 @@ graph LR
 
 ## Visual: inside the Kitchen module
 
-Both use cases delegate to the one `Kitchen` type, so the scheduling logic lives in a single place. `Kitchen` owns the slots and the queue and decides the next item to bake through its `SchedulingPolicy`. `ReconcileKitchen` runs this for real and changes state. `EstimateOrderReadyTime` runs the same steps on a copy and changes nothing, which is why an estimate can never drift from real scheduling.
+`MonitorKitchen` reads the current kitchen state via the `Clock` port and returns a view of the two ovens and the waiting queue. The `Kitchen` domain type does all the scheduling work; `MonitorKitchen` only reads it.
 
-```mermaid
-graph TD
-  subgraph UseCases [Use cases]
-    RK[ReconcileKitchen]
-    EST[EstimateOrderReadyTime]
-  end
-
-  subgraph KitchenType [Kitchen: state and scheduling logic]
-    K[complete finished, fill free slots, pick next item by policy]
-  end
-
-  subgraph StateAndPorts [State and ports]
-    Q[Queue: waiting items]
-    CLK[Clock port]
-    OV[Slots: 6 oven slots]
-  end
-
-  RK -->|drives, mutating state| K
-  EST -->|simulates on a copy| K
-  K -->|removes the next item from| Q
-  K -->|reads now from| CLK
-  K -->|completes finished items, frees and fills| OV
-```
-
-### What the two use cases do
-
-The kitchen is poll-based, so nothing moves on its own. `ReconcileKitchen` advances it to the current moment (complete finished items, then fill free slots from the queue, never preempting), and `EstimateOrderReadyTime` answers "when will this order be ready?" by running the same steps on a copy without changing anything.
+Reconciliation and estimation are not kitchen use cases. `ReconcileOrders` (in the Orders module) owns reconciliation: it calls the `Kitchen` port's `readyTimes()` to derive live finish times and advances orders from `InKitchen` to `Ready`. Estimation is done inside `ConfirmPayment` via `enqueueAndEstimate`, which enqueues and estimates atomically so two simultaneous confirmations cannot both estimate before either enqueues.
 
 Full step-by-step courses are in [functional-requirements.md](functional-requirements.md); the poll-based rationale is in [architecture-decisions.md](architecture-decisions.md); the inputs and outputs are in [contracts.md](contracts.md).
 
@@ -133,7 +107,7 @@ graph TD
     AD[DTO mappers, MenuCatalog adapter, Kitchen adapter]
   end
   subgraph UseCases [Application Business Rules: use cases]
-    UC[ViewMenu, AddMenuItem, UpdateMenuItem, RemoveMenuItem, PlaceOrder, ConfirmPayment, TrackOrder, ReconcileKitchen, EstimateOrderReadyTime]
+    UC[ViewMenu, AddMenuItem, UpdateMenuItem, RemoveMenuItem, PlaceOrder, ConfirmPayment, TrackOrder, ReconcileOrders, MonitorKitchen]
   end
   subgraph Entities [Enterprise Business Rules: entities]
     ENT[MenuItem, Category bake times, Order, OrderItem, PriorityTier derived, Kitchen]

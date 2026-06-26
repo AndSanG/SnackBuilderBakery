@@ -1,6 +1,6 @@
 {
   "name": "snack-builder-bakery",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backend API for order management, storefront operations, and a priority-based kitchen scheduler",
   "license": "UNLICENSED",
   "scripts": {
