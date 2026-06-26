@@ -21,7 +21,7 @@ the whole app.
 | Infrastructure | Adapters that implement a port | In-memory backing | `in-memory-order-repository.spec.ts`, `kitchen-service.adapter.spec.ts` |
 | Presentation | Controllers and exception filters map HTTP to use cases | Stubbed use cases | `menu.controller.spec.ts`, `orders-exception.filter.spec.ts` |
 | End to end | The real app over HTTP: routing, validation pipe, filters, DI graph | `FakeClock` only | `test/app.e2e-spec.ts` |
-| Manual | The running server plus the browser tester | None (real clock) | `public/tester.html` |
+| Manual | The running server via Swagger UI | None (real clock) | `http://localhost:3000/api` |
 
 The one thing the automated suite controls that manual cannot is time: e2e
 overrides `CLOCK` with a `FakeClock` it advances instantly. In manual testing
@@ -31,8 +31,8 @@ actually elapsed (see the note under Reconcile Kitchen).
 ## Coverage by use case
 
 Each use case lists its happy path and the edge cases that matter, where each is
-pinned automatically, and how to reproduce it by hand against
-[public/tester.html](../public/tester.html). Reference data: prices are integer
+pinned automatically, and how to reproduce it by hand via the Swagger UI at
+`http://localhost:3000/api`. Reference data: prices are integer
 cents; bake times are Cookie 5, Pastry 10, Bread 20 minutes; the oven has 6
 slots; priority runs Vip > AppDelivery > WalkIn.
 
@@ -112,7 +112,7 @@ for confirming the HTTP plumbing, not for racing the oven.
 npm test           # all automated layers, random order
 npm run test:cov   # with coverage (the CI floor is 90%)
 npm run test:e2e   # the HTTP end-to-end suite
-npm run start      # then open public/tester.html for the manual layer
+npm run start      # then open http://localhost:3000/api for the manual layer
 ```
 
 ## What is deliberately not covered

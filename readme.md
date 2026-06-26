@@ -5,7 +5,7 @@
 ![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791?logo=postgresql&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.1-blue)
+![Version](https://img.shields.io/badge/version-0.2.2-blue)
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
 
 Backend API for order management, storefront operations, and a priority-based kitchen scheduler.
@@ -45,8 +45,13 @@ docker compose down           # tear down
 ```
 
 - API: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/api`
 - Prometheus metrics: `http://localhost:3000/metrics`
 - Prometheus UI: `http://localhost:9090`
+
+**Logging:** every request emits a structured JSON log line to stdout (via `nestjs-pino`). Stream them live with `docker compose logs -f api`.
+
+**Metrics:** the API exposes a Prometheus-format `/metrics` endpoint. The bundled Prometheus service scrapes it every 15 seconds; query it at `http://localhost:9090`.
 
 See [docs/docker-usage.md](docs/docker-usage.md) for Prometheus queries, port overrides, image tagging, and troubleshooting.
 
@@ -84,6 +89,12 @@ npm run test:cov          # with coverage report
 npm run test:e2e          # HTTP end-to-end suite (spins up the NestJS app)
 npm run test:integration  # Prisma repository tests (skips gracefully without DATABASE_URL)
 ```
+
+### Manual testing
+
+Start the server (`npm run start` or `docker compose up -d`), then open `http://localhost:3000/api` in a browser. The Swagger UI covers every endpoint — add menu items, place and confirm orders, track status, monitor the kitchen — with request bodies, examples, and live execution built in.
+
+The one caveat: the real clock is used, so an order only becomes `Ready` after its bake time has actually elapsed. Use the e2e suite (`npm run test:e2e`) when you need to verify scheduling behaviour without waiting. Full use-case coverage map is in [docs/testing-strategy.md](docs/testing-strategy.md).
 
 ### Database (local)
 
@@ -128,6 +139,25 @@ readme.md        this file
 - Robust automated testing: suite verifies all scheduling and order flows
 - Version control: clear commit history, incremental delivery
 - Docker Compose: environment setup and observability
+
+## CI/CD
+
+Every pull request runs five checks via GitHub Actions (`.github/workflows/ci.yml`):
+
+| Check | What it enforces |
+|---|---|
+| `version-bump` | `package.json` version must be higher than `master` |
+| `commitlint` | All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format |
+| `lint` | ESLint passes with no errors |
+| `test` | Build compiles, unit tests pass at ≥ 90% coverage, e2e suite passes |
+| `docker` | Image builds successfully (runs after lint + test) |
+
+On merge to `master` the `docker` job also pushes the image to the GitHub Container Registry:
+
+```
+ghcr.io/andgang/snackbuilderbakery:latest
+ghcr.io/andgang/snackbuilderbakery:<version>
+```
 
 ## Backlog
 
