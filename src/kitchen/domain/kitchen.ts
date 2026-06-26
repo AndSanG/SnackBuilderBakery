@@ -65,6 +65,8 @@ export class Kitchen {
 
     let latestFinish = now.getTime();
     for (const item of pending) {
+      // Linear scan for the soonest-free slot. Deliberate at 6 ovens: a min-heap
+      // only wins past dozens of ovens. See docs/decisions/scheduling-data-structures.md.
       const earliest = Math.min(...slotFreeTimes);
       const slot = slotFreeTimes.indexOf(earliest);
       const finish = earliest + bakeDurationMinutes[item.category] * 60_000;
