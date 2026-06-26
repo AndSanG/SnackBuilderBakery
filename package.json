@@ -10,8 +10,9 @@
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:e2e": "jest --config test/jest-e2e.json"
+    "test:cov": "jest --coverage && node scripts/badge-cov.js",
+    "test:e2e": "jest --config test/jest-e2e.json",
+    "prepare": "cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -60,6 +61,7 @@
       "!main.ts"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": ["text", "lcov", "json-summary"],
     "coverageThreshold": {
       "global": {
         "statements": 90,
