@@ -68,3 +68,4 @@ Owned by Orders. Implemented by a Kitchen adapter. One port with both operations
 | TrackOrder | order reference | order reference, status, estimated ready time | not found |
 | ReconcileKitchen | the current instant | the kitchen advanced: finished items completed, free slots filled from the queue | none |
 | EstimateOrderReadyTime | an order's items, current kitchen state, the current instant | the estimated ready time | none |
+| MonitorKitchen | the current instant | a view: two ovens of three trays (the item baking in each and its ready time) and the waiting items in bake order | none |

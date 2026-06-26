@@ -1,7 +1,14 @@
 import { Category, bakeDurationMinutes } from '../../shared/domain/category';
 import { FifoPolicy, SchedulingPolicy } from './scheduling-policy';
 
-export const OVEN_SLOTS = 6; // 2 ovens x 3 trays
+export const OVENS = 2;
+export const TRAYS_PER_OVEN = 3;
+export const OVEN_SLOTS = OVENS * TRAYS_PER_OVEN; // 6 baking slots
+
+// Slots stay a flat pool of six: scheduling treats them as interchangeable.
+// Position encodes the oven for monitoring (slots 0..2 are oven 1, 3..5 are
+// oven 2), so no per-slot oven reference is needed unless a per-oven rule (one
+// oven, one temperature) ever arrives.
 
 // A unit of work the kitchen bakes: one item per oven slot. Carries its
 // category (for bake time), the order it belongs to, and a priority (lower
@@ -17,6 +24,12 @@ export interface BakeableItem {
 interface BakingItem {
   item: BakeableItem;
   startedAt: Date;
+}
+
+// A monitoring view of one oven slot: what it is baking and when it frees.
+export interface OvenSlot {
+  item: BakeableItem;
+  readyAt: Date;
 }
 
 // Poll-based kitchen: it has no timers. State advances only when reconcile is
@@ -53,6 +66,16 @@ export class Kitchen {
     return [...this.queue];
   }
 
+  // Per-slot view for monitoring: each slot's item and ready time, aligned to
+  // the slot positions, with null for an empty slot.
+  slotStates(): (OvenSlot | null)[] {
+    return this.slots.map((slot) =>
+      slot === null
+        ? null
+        : { item: slot.item, readyAt: new Date(this.finishTimeOf(slot)) },
+    );
+  }
+
   // Forward-simulates the schedule on copies of the slot and queue state to
   // find when the order's last item finishes. Changes nothing, so the estimate
   // can never drift from how reconcile actually schedules.
@@ -65,6 +88,8 @@ export class Kitchen {
 
     let latestFinish = now.getTime();
     for (const item of pending) {
+      // Linear scan for the soonest-free slot. Deliberate at 6 ovens: a min-heap
+      // only wins past dozens of ovens. See docs/decisions/scheduling-data-structures.md.
       const earliest = Math.min(...slotFreeTimes);
       const slot = slotFreeTimes.indexOf(earliest);
       const finish = earliest + bakeDurationMinutes[item.category] * 60_000;

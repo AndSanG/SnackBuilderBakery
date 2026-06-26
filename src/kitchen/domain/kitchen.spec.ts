@@ -170,4 +170,20 @@ describe('Kitchen estimateReadyTime', () => {
     expect(ids(kitchen.baking())).toContain(vip.id);
     expect(kitchen.waiting()).toHaveLength(1); // one walk-in bumped to wait
   });
+
+  it('reports each slot occupancy and ready time for monitoring', () => {
+    const kitchen = new Kitchen();
+    const clock = new FakeClock();
+    kitchen.enqueue([item(Category.Cookie)]); // one cookie, bakes 5 minutes
+    kitchen.reconcile(clock.now());
+
+    const states = kitchen.slotStates();
+
+    expect(states).toHaveLength(OVEN_SLOTS);
+    expect(states[0]?.item.category).toBe(Category.Cookie);
+    expect(states[0]?.readyAt).toEqual(
+      new Date(clock.now().getTime() + 5 * 60_000),
+    );
+    expect(states[1]).toBeNull();
+  });
 });
