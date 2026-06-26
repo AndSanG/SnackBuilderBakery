@@ -30,9 +30,9 @@ Scope is the current iteration (Menu, Order Placement, FIFO Kitchen Scheduler, C
 
 ### Oven identity
 
-The `Kitchen` uses six flat, anonymous slots rather than two ovens of three trays each. Scheduling and estimation only need a pool of six slots, so the oven grouping is not modeled yet.
+The `Kitchen` uses six flat slots rather than a nested structure of two ovens with three trays each. Scheduling and estimation only need a pool of six slots, so the slots stay flat.
 
-Oven identity (which item is in which oven) is required by Kitchen Monitoring (feature 6), which is out of scope for this iteration. When that feature is built, slots will gain an oven reference. We accept that this reworks the kitchen aggregate at that point, in exchange for a simpler model now.
+Kitchen Monitoring (feature 6) needs oven identity (which item is in which oven). Rather than rework the aggregate to put an oven reference on each slot, position encodes the oven: slots 0 to 2 are oven 1, slots 3 to 5 are oven 2. The monitoring view groups the flat slots into two ovens of three trays. This keeps scheduling on a simple flat pool while still answering "which oven". A per-slot oven reference is only needed if a per-oven rule arrives (for example one oven holds one temperature, binding its trays to a single category); that trigger has not arrived.
 
 ### Scheduling policy abstraction
 
