@@ -18,7 +18,7 @@ Each feature depends on the ones above it, so the table also reflects the build 
 
 ## Current Scope
 
-The current build establishes the full project structure end to end and adds priority scheduling and kitchen monitoring on top: Menu Management, Order Placement, an always-successful payment confirmation, a priority-based Kitchen Scheduler (VIP, App/Delivery, Walk-in) with capacity-based estimation and the VIP ripple recalculation, and a Kitchen Monitoring view (which item is in which oven, and what is waiting) (features 1 to 6). The goal was to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Real Payment Management comes next. See [assumptions.md](docs/assumptions.md) for the simplifications this implies.
+The current build covers all seven features end to end: Menu Management, Order Placement, payment by cash or card (with amount validation, change, and a decline path), a priority-based Kitchen Scheduler (VIP, App/Delivery, Walk-in) with capacity-based estimation and the VIP ripple recalculation, and a Kitchen Monitoring view (which item is in which oven, and what is waiting). Persistence is in-memory and the card branch has no real gateway yet. See [assumptions.md](docs/assumptions.md) for the simplifications this implies, and [backlog.md](docs/backlog.md) for what is deferred.
 
 ## Getting Started
 

@@ -15,13 +15,16 @@ import { ReconcileOrders } from './application/reconcile-orders';
 import { MenuCatalog, MENU_CATALOG } from './application/menu-catalog';
 import { OrderRepository, ORDER_REPOSITORY } from './application/order-repository';
 import { KitchenService, KITCHEN_SERVICE } from './application/kitchen-service';
+import { PaymentProcessor, PAYMENT_PROCESSOR } from './application/payment-processor';
 import { InMemoryOrderRepository } from './infrastructure/in-memory-order-repository';
+import { LocalPaymentProcessor } from './infrastructure/local-payment-processor';
 
 @Module({
   imports: [MenuModule, KitchenModule, SharedModule],
   controllers: [OrdersController],
   providers: [
     { provide: ORDER_REPOSITORY, useClass: InMemoryOrderRepository },
+    { provide: PAYMENT_PROCESSOR, useClass: LocalPaymentProcessor },
     {
       provide: MENU_CATALOG,
       useFactory: (menu: MenuRepository) => new MenuCatalogAdapter(menu),
@@ -46,9 +49,12 @@ import { InMemoryOrderRepository } from './infrastructure/in-memory-order-reposi
     },
     {
       provide: ConfirmPayment,
-      useFactory: (orders: OrderRepository, kitchen: KitchenService) =>
-        new ConfirmPayment(orders, kitchen),
-      inject: [ORDER_REPOSITORY, KITCHEN_SERVICE],
+      useFactory: (
+        orders: OrderRepository,
+        kitchen: KitchenService,
+        payments: PaymentProcessor,
+      ) => new ConfirmPayment(orders, kitchen, payments),
+      inject: [ORDER_REPOSITORY, KITCHEN_SERVICE, PAYMENT_PROCESSOR],
     },
     {
       provide: ReconcileOrders,

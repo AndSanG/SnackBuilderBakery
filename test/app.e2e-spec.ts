@@ -52,9 +52,15 @@ describe('Bakery (e2e)', () => {
 
     const confirmed = await request(server)
       .post(`/orders/${orderId}/confirm`)
+      .send({ method: 'Cash', amountTendered: 1000 })
       .expect(201);
     expect(confirmed.body.status).toBe('InKitchen');
     expect(confirmed.body.estimatedReadyTime).toEqual(expect.any(String));
+    expect(confirmed.body.payment).toEqual({
+      method: 'Cash',
+      amountPaid: 250,
+      change: 750,
+    });
 
     await request(server).get(`/orders/${orderId}`).expect(200).expect({
       orderId,
@@ -75,7 +81,9 @@ describe('Bakery (e2e)', () => {
     const placed = await request(server)
       .post('/orders')
       .send({ items: [{ menuItemId, quantity: 2 }], source: 'WalkIn' });
-    await request(server).post(`/orders/${placed.body.orderId as string}/confirm`);
+    await request(server)
+      .post(`/orders/${placed.body.orderId as string}/confirm`)
+      .send({ method: 'Cash', amountTendered: 1000 });
 
     const view = await request(server).get('/kitchen').expect(200);
 
@@ -106,7 +114,25 @@ describe('Bakery (e2e)', () => {
       .send({ items: [{ menuItemId, quantity: 1 }], source: 'WalkIn' });
     const orderId = placed.body.orderId as string;
 
-    await request(server).post(`/orders/${orderId}/confirm`).expect(201);
-    await request(server).post(`/orders/${orderId}/confirm`).expect(409);
+    const pay = { method: 'Cash', amountTendered: 1000 };
+    await request(server).post(`/orders/${orderId}/confirm`).send(pay).expect(201);
+    await request(server).post(`/orders/${orderId}/confirm`).send(pay).expect(409);
+  });
+
+  it('declines an underpaid order with 402 and keeps it awaiting payment', async () => {
+    const server = app.getHttpServer();
+    const menuItemId = await createCookie();
+    const placed = await request(server)
+      .post('/orders')
+      .send({ items: [{ menuItemId, quantity: 1 }], source: 'WalkIn' }); // totals 250
+    const orderId = placed.body.orderId as string;
+
+    await request(server)
+      .post(`/orders/${orderId}/confirm`)
+      .send({ method: 'Cash', amountTendered: 100 })
+      .expect(402);
+
+    const tracked = await request(server).get(`/orders/${orderId}`).expect(200);
+    expect(tracked.body.status).toBe('AwaitingPayment');
   });
 });
