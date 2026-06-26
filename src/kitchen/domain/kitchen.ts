@@ -1,4 +1,5 @@
 import { Category, bakeDurationMinutes } from '../../shared/domain/category';
+import { FifoPolicy, SchedulingPolicy } from './scheduling-policy';
 
 export const OVEN_SLOTS = 6; // 2 ovens x 3 trays
 
@@ -28,6 +29,8 @@ export class Kitchen {
   ).fill(null);
   private queue: BakeableItem[] = [];
 
+  constructor(private readonly policy: SchedulingPolicy = new FifoPolicy()) {}
+
   enqueue(items: BakeableItem[]): void {
     this.queue.push(...items);
   }
@@ -54,7 +57,7 @@ export class Kitchen {
     const slotFreeTimes = this.slots.map((slot) =>
       slot === null ? now.getTime() : this.finishTimeOf(slot),
     );
-    const pending = [...this.queue, ...orderItems];
+    const pending = this.policy.order([...this.queue, ...orderItems]);
     const orderItemIds = new Set(orderItems.map((item) => item.id));
 
     let latestFinish = now.getTime();
@@ -77,12 +80,13 @@ export class Kitchen {
   }
 
   private fillFreeSlots(now: Date): void {
+    const ordered = this.policy.order(this.queue);
     for (let i = 0; i < this.slots.length; i++) {
-      if (this.slots[i] === null && this.queue.length > 0) {
-        const next = this.queue.shift() as BakeableItem;
-        this.slots[i] = { item: next, startedAt: now };
+      if (this.slots[i] === null && ordered.length > 0) {
+        this.slots[i] = { item: ordered.shift() as BakeableItem, startedAt: now };
       }
     }
+    this.queue = ordered;
   }
 
   private isDone(baking: BakingItem, now: Date): boolean {
