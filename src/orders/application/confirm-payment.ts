@@ -58,11 +58,8 @@ export class ConfirmPayment {
       priority,
     }));
 
-    // Payment auto-succeeds. Estimate before enqueueing so the order's own
-    // items are not counted twice in the simulation.
     const estimatedReadyTime =
-      await this.kitchen.estimateReadyTime(kitchenItems);
-    await this.kitchen.enqueue(kitchenItems);
+      await this.kitchen.enqueueAndEstimate(kitchenItems);
 
     const confirmed: Order = {
       ...order,
@@ -86,6 +83,11 @@ export class ConfirmPayment {
   // orders back in the queue, so their stored estimates go stale. Recompute
   // every in-kitchen order's ready time from the new queue and save the ones
   // that changed.
+  //
+  // Concurrent-safety note: if another ConfirmPayment interleaves between
+  // readyTimes() and findByStatus(), its newly-added order might not appear in
+  // this ripple. That order's own ConfirmPayment runs its own ripple afterward,
+  // so estimates converge without any extra coordination.
   private async refreshBumpedEstimates(justConfirmedId: string): Promise<void> {
     const readyTimes = await this.kitchen.readyTimes();
     const inKitchen = await this.orders.findByStatus(OrderStatus.InKitchen);

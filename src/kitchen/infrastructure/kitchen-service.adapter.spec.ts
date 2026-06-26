@@ -22,19 +22,12 @@ const cookie = (id: string) => ({
 });
 
 describe('KitchenServiceAdapter', () => {
-  it('estimates a free-kitchen order at its bake time from now', async () => {
-    const { sut, clock } = makeSUT();
+  it('enqueues items and returns their estimate in one call', async () => {
+    const { sut, kitchen, clock } = makeSUT();
 
-    const estimate = await sut.estimateReadyTime([cookie('a')]);
+    const estimate = await sut.enqueueAndEstimate([cookie('a'), cookie('b')]);
 
     expect(estimate).toEqual(new Date(clock.now().getTime() + 5 * 60_000));
-  });
-
-  it('enqueues items so they start baking', async () => {
-    const { sut, kitchen } = makeSUT();
-
-    await sut.enqueue([cookie('a'), cookie('b')]);
-
     expect(kitchen.baking().map((item) => item.id)).toEqual(['a', 'b']);
   });
 });
