@@ -1,0 +1,208 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>SnackBuilder endpoint tester</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 2rem; margin-right: calc(50vw + 1rem); padding: 0 1rem; }
+  .response { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; box-sizing: border-box; padding: 1rem; overflow: auto; background: #fafafa; border-left: 1px solid #ccc; }
+  .response pre { margin: 0; min-height: calc(100vh - 5rem); }
+  @media (max-width: 1000px) { body { margin-right: 2rem; } .response { position: static; width: auto; height: auto; border-left: 0; } }
+  fieldset { margin: 0 0 1rem; border: 1px solid #ccc; border-radius: 6px; }
+  legend { font-weight: 600; }
+  label { display: inline-block; min-width: 90px; }
+  input, select, textarea { font: inherit; padding: 2px 4px; }
+  button { font: inherit; cursor: pointer; padding: 4px 10px; }
+  pre { background: #111; color: #0f0; padding: 1rem; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
+  .row { margin: 4px 0; }
+  .hint { color: #555; font-size: 13px; margin: 2px 0 8px; }
+  .steps { background: #f6f6f6; border-radius: 6px; padding: 8px 16px; }
+  code { background: #eee; padding: 0 3px; border-radius: 3px; }
+  .cases { list-style: none; margin: 2px 0 10px; padding: 0; font-size: 13px; }
+  .cases li { margin: 3px 0; }
+  .cases label { min-width: 0; display: inline; }
+  .cases input { margin-right: 6px; }
+  .tag { font-size: 11px; font-weight: 600; border-radius: 3px; padding: 0 5px; margin-right: 5px; }
+  .happy { background: #d8f5d8; color: #176b17; }
+  .edge { background: #ffe0c2; color: #8a4b00; }
+  .exp { color: #888; }
+</style>
+
+<h1>SnackBuilder endpoint tester</h1>
+<p>A scratch page to poke the bakery API by hand. Each button sends one HTTP
+request and dumps the raw response at the bottom. No login, no build step.</p>
+
+<div class="steps">
+  <strong>Typical run-through:</strong>
+  <ol>
+    <li><strong>Add menu items</strong> with <code>POST /menu</code> (a cookie, a pastry...).</li>
+    <li><strong>List the menu</strong> with <code>GET /menu</code> and copy an item's <code>id</code>.</li>
+    <li><strong>Place an order</strong>: paste that id into the items JSON, pick a source, <code>POST /orders</code>. You get back an <code>orderId</code> and total (in cents). The order starts <em>AwaitingPayment</em>.</li>
+    <li><strong>Confirm payment</strong>: put the <code>orderId</code> in the order id box and <code>POST confirm</code>. The order moves to <em>InKitchen</em> and you get an <code>estimatedReadyTime</code>.</li>
+    <li><strong>Advance the clock</strong>: nothing cooks on its own, so <code>POST /orders/reconcile</code> promotes any order whose estimate has passed to <em>Ready</em>.</li>
+    <li><strong>Track</strong> any order anytime with <code>GET status</code>.</li>
+  </ol>
+  <p style="margin:6px 0 0">Each use case below lists its cases from the
+    <strong>testing strategy</strong> (<code>docs/testing-strategy.md</code>):
+    <span class="tag happy">happy</span> paths and <span class="tag edge">edge</span> cases.
+    Tick each off as you run it. Boxes are remembered in this browser.</p>
+</div>
+
+<div class="row" style="margin-top:1rem">
+  <label>API base</label><input id="base" value="http://localhost:3000" size="30" />
+  <span class="hint">Change this to point at a server running on another machine (e.g. <code>http://192.168.x.x:3000</code>).</span>
+</div>
+
+<fieldset>
+  <legend>Menu management</legend>
+
+  <p class="hint"><strong>View Menu</strong> &mdash; <code>GET /menu</code>. Lists every item with name,
+    category, and price. Empty bakery returns <code>[]</code>.</p>
+  <div class="row"><button data-call="GET /menu">View Menu</button></div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Add an item, then View Menu <span class="exp">&rarr; item appears with name/category/price</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>View Menu on a fresh server <span class="exp">&rarr; <code>[]</code></span></label></li>
+  </ul>
+
+  <p class="hint"><strong>Add Menu Item</strong> &mdash; <code>POST /menu</code>. Validates and creates an item,
+    returns it with its new <code>id</code>. price is integer cents (250 = $2.50); category sets bake
+    time (Cookie 5, Pastry 10, Bread 20 min). Bad data &rarr; 400.</p>
+  <div class="row">
+    <label>name</label><input id="m-name" value="Choc Chip" />
+    <label>category</label>
+    <select id="m-cat"><option>Cookie</option><option>Pastry</option><option>Bread</option></select>
+    <label>price (cents)</label><input id="m-price" type="number" value="250" />
+    <button data-call="POST /menu">Add Menu Item</button>
+  </div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Valid item <span class="exp">&rarr; 201, returns new <code>id</code></span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Empty name <span class="exp">&rarr; 400</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Price 0 or negative <span class="exp">&rarr; 400</span></label></li>
+  </ul>
+
+  <p class="hint"><strong>Update Menu Item</strong> &mdash; <code>PATCH /menu/:id</code> (uses the name/category/price
+    above). <strong>Remove Menu Item</strong> &mdash; <code>DELETE /menu/:id</code> (returns 204, no body).
+    Both need a real <code>id</code> from View Menu; unknown id &rarr; 404.</p>
+  <div class="row">
+    <label>id</label><input id="m-id" placeholder="menu item id" />
+    <button data-call="PATCH /menu/:id">Update Menu Item</button>
+    <button data-call="DELETE /menu/:id">Remove Menu Item</button>
+  </div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Update a real id's price <span class="exp">&rarr; response shows new price</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Remove a real id, then View Menu <span class="exp">&rarr; 204, item gone</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Update or Remove a made-up id <span class="exp">&rarr; 404</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Update with price 0 <span class="exp">&rarr; 400</span></label></li>
+  </ul>
+</fieldset>
+
+<fieldset>
+  <legend>Ordering</legend>
+
+  <p class="hint"><strong>Place Order</strong> &mdash; <code>POST /orders</code>. Checks the items exist, prices the
+    order, and creates it <em>AwaitingPayment</em>. Returns a ticket (<code>orderId</code> + total cents).
+    source sets kitchen priority: Vip &gt; AppDelivery &gt; WalkIn. menuItemId must exist and quantity
+    &ge; 1, else 400. Empty items &rarr; 400.</p>
+  <div class="row">
+    <label>items JSON</label>
+    <input id="o-items" size="40" value='[{"menuItemId":"","quantity":1}]' />
+  </div>
+  <div class="row">
+    <label>source</label>
+    <select id="o-src"><option>Vip</option><option>AppDelivery</option><option>WalkIn</option></select>
+    <button data-call="POST /orders">Place Order</button>
+  </div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Real menuItemId <span class="exp">&rarr; 201, ticket with <code>orderId</code> + total</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Two lines / quantity &gt; 1 <span class="exp">&rarr; total sums correctly</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Empty items <code>[]</code> <span class="exp">&rarr; 400</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Bogus menuItemId <span class="exp">&rarr; 400</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Quantity 0 <span class="exp">&rarr; 400</span></label></li>
+  </ul>
+
+  <p class="hint"><strong>Confirm Payment</strong> &mdash; <code>POST /orders/:id/confirm</code>. Payment auto-succeeds:
+    enqueues the items in the kitchen, moves the order to <em>InKitchen</em>, returns an
+    <code>estimatedReadyTime</code>. Unknown order &rarr; 404; already paid &rarr; 409.
+    <strong>Track Order</strong> &mdash; <code>GET /orders/:id</code>: current status anytime.</p>
+  <div class="row">
+    <label>order id</label><input id="o-id" placeholder="order id" />
+    <button data-call="GET /orders/:id">Track Order</button>
+    <button data-call="POST /orders/:id/confirm">Confirm Payment</button>
+  </div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Confirm a placed order <span class="exp">&rarr; InKitchen + <code>estimatedReadyTime</code></span></label></li>
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Track it <span class="exp">&rarr; status changes across the lifecycle</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Confirm the same order twice <span class="exp">&rarr; 409</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Confirm or Track a made-up id <span class="exp">&rarr; 404</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Confirm more than 6 items' worth <span class="exp">&rarr; later estimates push out (oven contention)</span></label></li>
+  </ul>
+
+  <p class="hint"><strong>Reconcile Kitchen</strong> &mdash; <code>POST /orders/reconcile</code>. Nothing bakes on its
+    own: this advances the clock so items whose bake time has elapsed finish and their orders flip to
+    <em>Ready</em>. Call it after Confirm Payment to see progress.</p>
+  <div class="row"><button data-call="POST /orders/reconcile">Reconcile Kitchen</button></div>
+  <ul class="cases">
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Reconcile right after confirming <span class="exp">&rarr; still InKitchen (nothing elapsed)</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag happy">happy</span>Wait the bake time (cookie = 5 min), then Reconcile + Track <span class="exp">&rarr; Ready</span></label></li>
+    <li><label><input type="checkbox" /><span class="tag edge">edge</span>Confirm &gt; 6 items, Reconcile early <span class="exp">&rarr; overflow stays queued</span></label></li>
+  </ul>
+  <p class="hint">Real clock here: an order only goes Ready after the bake time has truly
+    passed. The automated e2e suite fast-forwards time instead, so for instant Ready prefer
+    <code>npm run test:e2e</code>.</p>
+</fieldset>
+
+<div class="response">
+  <h3>Response</h3>
+  <pre id="out">click a button&hellip;</pre>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const out = $('out');
+
+  function bodyFor(call) {
+    switch (call) {
+      case 'POST /menu':
+      case 'PATCH /menu/:id':
+        return { name: $('m-name').value, category: $('m-cat').value, price: Number($('m-price').value) };
+      case 'POST /orders':
+        return { items: JSON.parse($('o-items').value), source: $('o-src').value };
+      default:
+        return undefined;
+    }
+  }
+
+  function pathFor(call) {
+    return call
+      .split(' ')[1]
+      .replace(':id', call.startsWith('POST /orders/') || call.startsWith('GET /orders') ? $('o-id').value : $('m-id').value);
+  }
+
+  async function run(call) {
+    const method = call.split(' ')[0];
+    const url = $('base').value + pathFor(call);
+    const body = bodyFor(call);
+    out.textContent = `${method} ${url}\n…`;
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: body ? { 'content-type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await res.text();
+      let pretty = text;
+      try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+      out.textContent = `${method} ${url}\n${res.status} ${res.statusText}\n\n${pretty || '(empty)'}`;
+    } catch (e) {
+      out.textContent = `${method} ${url}\n\nFETCH FAILED: ${e.message}\n(is the server running? is CORS enabled?)`;
+    }
+  }
+
+  document.querySelectorAll('button[data-call]').forEach((b) =>
+    b.addEventListener('click', () => run(b.dataset.call)));
+
+  // Remember ticked test cases per browser, keyed by their position.
+  document.querySelectorAll('.cases input').forEach((box, i) => {
+    box.checked = localStorage.getItem('case' + i) === '1';
+    box.addEventListener('change', () =>
+      localStorage.setItem('case' + i, box.checked ? '1' : '0'));
+  });
+</script>
