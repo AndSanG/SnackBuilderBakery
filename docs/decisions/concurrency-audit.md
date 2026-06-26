@@ -30,11 +30,13 @@ inside one call. Orchestration that spans awaits lives in `ConfirmPayment`, and
 the rows above cover it. Real locking is only needed if the kitchen moves to
 multiple processes or a shared store.
 
-## Accepted residual
+## Residual closed
 
-After a VIP order bumps a lower-priority order, that order's stored estimate is
-briefly stale-low until the ripple refreshes it. A reconcile landing in that
-window can mark the order `Ready` slightly early. The status guard keeps this a
-single forward transition (never a flap), and the window closes as soon as the
-ripple runs. Eliminating it entirely means deriving readiness from the kitchen's
-actual slot state rather than the stored estimate.
+`ReconcileOrders` now derives readiness from the kitchen's live schedule rather
+than the stored estimate: it calls `kitchenService.readyTimes()` and prefers the
+live finish time for orders still in the kitchen, falling back to the stored
+estimate only once all of an order's items have cleared the slots. A VIP bump
+that pushes order A's real finish time beyond the stale stored estimate is now
+caught: `liveReadyTimes.get(A) > now` blocks the premature `Ready` transition.
+The status guard (`updateEstimateIfInKitchen`) remains in place as defence in
+depth.
