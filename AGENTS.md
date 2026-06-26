@@ -4,11 +4,13 @@ Guidance for any AI agent working in this repository, whether Claude Code or ano
 
 ## Start here
 
-These two guides are the rules of the road, not background reading:
+These three guides are the rules of the road, not background reading:
 
 - [docs/agents/development-process.md](docs/agents/development-process.md): how we build. The TDD loop, the phases, and commit discipline.
 - [docs/agents/clean-architecture.md](docs/agents/clean-architecture.md): how the code is structured. The dependency rule, the layers, and ports.
 - [docs/agents/testing.md](docs/agents/testing.md): how tests are written. What a test verifies, test doubles, isolation, and naming.
+
+See [docs/agents/README.md](docs/agents/README.md) for a one-line description of each guide and how they fit together.
 
 Follow them. If a change would violate either, stop and reconsider the change.
 
@@ -30,6 +32,10 @@ Follow them. If a change would violate either, stop and reconsider the change.
 - [architecture-decisions.md](docs/architecture-decisions.md): stack and cross-cutting decisions.
 - [assumptions.md](docs/assumptions.md): interpretations of ambiguous requirements.
 - [backlog.md](docs/backlog.md): work deferred outside the current scope.
+- [testing-strategy.md](docs/testing-strategy.md): coverage map per use case (automated and manual layers).
+- [docker-usage.md](docs/docker-usage.md): running the full stack with Docker Compose, including Prometheus.
+- [decisions/concurrency-audit.md](docs/decisions/concurrency-audit.md): every shared-state mutation path and how each race is handled.
+- [decisions/scheduling-data-structures.md](docs/decisions/scheduling-data-structures.md): benchmarked alternatives to the kitchen's data structures and the triggers that would justify switching.
 
 ## Conventions
 
