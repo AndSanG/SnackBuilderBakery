@@ -38,6 +38,42 @@ describe('InMemoryOrderRepository', () => {
     expect((await sut.findById('1'))?.status).toBe(OrderStatus.InKitchen);
   });
 
+  it('returns only orders with the matching status', async () => {
+    const sut = makeSUT();
+    await sut.save(order('1')); // AwaitingPayment
+    await sut.save({ ...order('2'), status: OrderStatus.InKitchen });
+
+    const result = await sut.findByStatus(OrderStatus.AwaitingPayment);
+
+    expect(result.map((o) => o.id)).toEqual(['1']);
+  });
+
+  it('atomically claims an awaiting-payment order and sets it to PaymentProcessing', async () => {
+    const sut = makeSUT();
+    await sut.save(order('1'));
+
+    const claimed = await sut.claimForPayment('1');
+
+    expect(claimed?.id).toBe('1');
+    expect((await sut.findById('1'))?.status).toBe(OrderStatus.PaymentProcessing);
+  });
+
+  it('returns null and makes no change when claiming an order not in AwaitingPayment', async () => {
+    const sut = makeSUT();
+    await sut.save({ ...order('1'), status: OrderStatus.InKitchen });
+
+    const result = await sut.claimForPayment('1');
+
+    expect(result).toBeNull();
+    expect((await sut.findById('1'))?.status).toBe(OrderStatus.InKitchen);
+  });
+
+  it('returns null when claiming an unknown order', async () => {
+    const sut = makeSUT();
+
+    expect(await sut.claimForPayment('missing')).toBeNull();
+  });
+
   it('refreshes the estimate of an in-kitchen order', async () => {
     const sut = makeSUT();
     await sut.save({ ...order('1'), status: OrderStatus.InKitchen });

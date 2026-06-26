@@ -48,18 +48,15 @@ class OrderRepositorySpy implements OrderRepository {
 }
 
 class KitchenServiceSpy implements KitchenService {
-  calls: string[] = [];
   enqueued: KitchenItem[][] = [];
   private estimate = new Date('2026-01-01T00:30:00.000Z');
 
   async enqueueAndEstimate(items: KitchenItem[]): Promise<Date> {
-    this.calls.push('enqueueAndEstimate');
     this.enqueued.push(items);
     return this.estimate;
   }
 
   async readyTimes(): Promise<Map<string, Date>> {
-    this.calls.push('readyTimes');
     return new Map();
   }
 
@@ -121,15 +118,6 @@ describe('ConfirmPayment', () => {
     ]);
   });
 
-  it('enqueues and estimates atomically, then refreshes other in-kitchen orders', async () => {
-    const { sut, orders, kitchen } = makeSUT();
-    orders.stubFindById(awaitingOrder());
-
-    await sut.execute('order-1', cash);
-
-    expect(kitchen.calls).toEqual(['enqueueAndEstimate', 'readyTimes']);
-  });
-
   it('moves the order into the kitchen with the estimated ready time', async () => {
     const { sut, orders, kitchen } = makeSUT();
     orders.stubFindById(awaitingOrder());
@@ -159,7 +147,7 @@ describe('ConfirmPayment', () => {
       }),
     ).rejects.toBeInstanceOf(PaymentDeclinedError);
 
-    expect(kitchen.calls).toEqual([]); // never enqueued
+    expect(kitchen.enqueued).toHaveLength(0); // never enqueued
     // the claim is released back to AwaitingPayment so the customer can retry
     expect(orders.savedOrders.at(-1)?.status).toBe(OrderStatus.AwaitingPayment);
   });

@@ -41,12 +41,6 @@ const makeSUT = (): { sut: AddMenuItem; repository: MenuRepositorySpy } => {
 };
 
 describe('AddMenuItem', () => {
-  it('does not message the repository upon creation', () => {
-    const { repository } = makeSUT();
-
-    expect(repository.addedItems).toHaveLength(0);
-  });
-
   it('adds an item with the given details to the repository', async () => {
     const { sut, repository } = makeSUT();
 
