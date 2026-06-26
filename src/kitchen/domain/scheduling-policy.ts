@@ -14,3 +14,15 @@ export class FifoPolicy implements SchedulingPolicy {
     return [...waiting];
   }
 }
+
+// Highest priority first (lower number wins), keeping arrival order within a
+// tier so same-priority orders stay fair. No preemption lives in the Kitchen,
+// not here: this only orders the waiting queue, never what is already baking.
+export class PriorityPolicy implements SchedulingPolicy {
+  order(waiting: readonly BakeableItem[]): BakeableItem[] {
+    return waiting
+      .map((item, arrival) => ({ item, arrival }))
+      .sort((a, b) => a.item.priority - b.item.priority || a.arrival - b.arrival)
+      .map((entry) => entry.item);
+  }
+}

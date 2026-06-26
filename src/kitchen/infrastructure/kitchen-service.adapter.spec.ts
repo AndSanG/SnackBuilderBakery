@@ -14,7 +14,12 @@ const makeSUT = (): {
   return { sut, kitchen, clock };
 };
 
-const cookie = (id: string) => ({ id, orderId: 'o1', category: Category.Cookie });
+const cookie = (id: string) => ({
+  id,
+  orderId: 'o1',
+  category: Category.Cookie,
+  priority: 3,
+});
 
 describe('KitchenServiceAdapter', () => {
   it('estimates a free-kitchen order at its bake time from now', async () => {

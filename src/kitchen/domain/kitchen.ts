@@ -4,11 +4,14 @@ import { FifoPolicy, SchedulingPolicy } from './scheduling-policy';
 export const OVEN_SLOTS = 6; // 2 ovens x 3 trays
 
 // A unit of work the kitchen bakes: one item per oven slot. Carries its
-// category (for bake time) and the order it belongs to.
+// category (for bake time), the order it belongs to, and a priority (lower
+// bakes first) the scheduling policy orders by. The kitchen treats priority as
+// an opaque number, so it never needs to know about order sources or tiers.
 export interface BakeableItem {
   id: string;
   orderId: string;
   category: Category;
+  priority: number;
 }
 
 interface BakingItem {

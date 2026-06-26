@@ -1,12 +1,14 @@
 import { Kitchen, OVEN_SLOTS } from './kitchen';
+import { PriorityPolicy } from './scheduling-policy';
 import { FakeClock } from '../../shared/clock/fake-clock';
 import { Category } from '../../shared/domain/category';
 
 let nextId = 0;
-const item = (category: Category, orderId = 'order-1') => ({
+const item = (category: Category, orderId = 'order-1', priority = 3) => ({
   id: `item-${nextId++}`,
   orderId,
   category,
+  priority,
 });
 const items = (count: number, category: Category) =>
   Array.from({ length: count }, () => item(category));
@@ -150,5 +152,22 @@ describe('Kitchen estimateReadyTime', () => {
 
     expect(ids(kitchen.baking())).toEqual(bakingBefore);
     expect(ids(kitchen.waiting())).toEqual(waitingBefore);
+  });
+
+  it('fills freed slots with the highest-priority waiting items first', () => {
+    const kitchen = new Kitchen(new PriorityPolicy());
+    const clock = new FakeClock();
+    kitchen.enqueue(items(OVEN_SLOTS, Category.Bread)); // 6 fillers, priority 3
+    kitchen.reconcile(clock.now()); // all slots busy for 20 minutes
+
+    const walkIns = items(OVEN_SLOTS, Category.Cookie); // 6 waiting, priority 3
+    const vip = item(Category.Cookie, 'vip-order', 1); // priority 1
+    kitchen.enqueue([...walkIns, vip]); // 7 waiting, more than capacity
+
+    clock.advance(20); // the breads finish
+    kitchen.reconcile(clock.now()); // refill the 6 freed slots
+
+    expect(ids(kitchen.baking())).toContain(vip.id);
+    expect(kitchen.waiting()).toHaveLength(1); // one walk-in bumped to wait
   });
 });

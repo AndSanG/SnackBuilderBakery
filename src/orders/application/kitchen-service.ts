@@ -6,6 +6,9 @@ export interface KitchenItem {
   id: string;
   orderId: string;
   category: Category;
+  // Lower bakes first. Orders derives this from the order source's priority
+  // tier; the kitchen treats it as opaque.
+  priority: number;
 }
 
 // Owned by Orders, sized to what ConfirmPayment needs from the kitchen. The

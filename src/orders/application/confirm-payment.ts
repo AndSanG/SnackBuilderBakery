@@ -1,4 +1,5 @@
 import { Order, OrderStatus } from '../domain/order';
+import { priorityTierFor } from '../domain/priority-tier';
 import { OrderRepository } from './order-repository';
 import { KitchenItem, KitchenService } from './kitchen-service';
 import { OrderAlreadyConfirmedError, OrderNotFoundError } from './order-errors';
@@ -24,10 +25,12 @@ export class ConfirmPayment {
       throw new OrderAlreadyConfirmedError(orderId);
     }
 
+    const priority = priorityTierFor(order.source);
     const kitchenItems: KitchenItem[] = order.items.map((item) => ({
       id: item.id,
       orderId: order.id,
       category: item.category,
+      priority,
     }));
 
     // Payment auto-succeeds. Estimate before enqueueing so the order's own

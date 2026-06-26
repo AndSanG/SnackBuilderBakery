@@ -88,15 +88,15 @@ describe('ConfirmPayment', () => {
     );
   });
 
-  it('enqueues the order items as kitchen items', async () => {
+  it('enqueues the order items as kitchen items with the source priority', async () => {
     const { sut, orders, kitchen } = makeSUT();
-    orders.stubFindById(awaitingOrder());
+    orders.stubFindById(awaitingOrder()); // a VIP order, priority tier 1
 
     await sut.execute('order-1');
 
     expect(kitchen.enqueued[0]).toEqual([
-      { id: 'i1', orderId: 'order-1', category: Category.Cookie },
-      { id: 'i2', orderId: 'order-1', category: Category.Bread },
+      { id: 'i1', orderId: 'order-1', category: Category.Cookie, priority: 1 },
+      { id: 'i2', orderId: 'order-1', category: Category.Bread, priority: 1 },
     ]);
   });
 
