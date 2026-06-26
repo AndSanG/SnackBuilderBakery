@@ -13,6 +13,7 @@
     "test:cov": "jest --coverage && node scripts/badge-cov.js",
     "test:e2e": "jest --config test/jest-e2e.json",
     "test:integration": "jest --config test/jest-integration.json",
+    "db:migrate": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "prepare": "[ -d .git ] && cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push || true"
   },
@@ -21,6 +22,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "nestjs-pino": "^4.6.1",
@@ -41,7 +43,6 @@
     "eslint": "^9.39.4",
     "jest": "^29.7.0",
     "nestjs-doctor": "^0.4.32",
-    "prisma": "^6.19.3",
     "supertest": "^7.2.2",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",

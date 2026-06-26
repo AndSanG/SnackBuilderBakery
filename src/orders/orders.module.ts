@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PRISMA_CLIENT } from '../shared/prisma/prisma.module';
 import { MenuModule, MENU_REPOSITORY } from '../menu/menu.module';
 import { MenuRepository } from '../menu/application/menu-repository';
 import { MenuCatalogAdapter } from '../menu/infrastructure/menu-catalog.adapter';
@@ -28,10 +29,9 @@ import { LocalPaymentProcessor } from './infrastructure/local-payment-processor'
     {
       // ponytail: env-based switch; DATABASE_URL absent means in-memory (unit tests stay fast)
       provide: ORDER_REPOSITORY,
-      useFactory: (): OrderRepository =>
-        process.env.DATABASE_URL
-          ? new PrismaOrderRepository(new PrismaClient())
-          : new InMemoryOrderRepository(),
+      useFactory: (prisma: PrismaClient | null): OrderRepository =>
+        prisma ? new PrismaOrderRepository(prisma) : new InMemoryOrderRepository(),
+      inject: [PRISMA_CLIENT],
     },
     { provide: PAYMENT_PROCESSOR, useClass: LocalPaymentProcessor },
     {
@@ -67,9 +67,9 @@ import { LocalPaymentProcessor } from './infrastructure/local-payment-processor'
     },
     {
       provide: ReconcileOrders,
-      useFactory: (orders: OrderRepository, clock: Clock) =>
-        new ReconcileOrders(orders, clock),
-      inject: [ORDER_REPOSITORY, CLOCK],
+      useFactory: (orders: OrderRepository, clock: Clock, kitchen: KitchenService) =>
+        new ReconcileOrders(orders, clock, kitchen),
+      inject: [ORDER_REPOSITORY, CLOCK, KITCHEN_SERVICE],
     },
   ],
 })

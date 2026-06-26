@@ -10,6 +10,7 @@ async function bootstrap(): Promise<void> {
     await NestFactory.create(AppModule, { bufferLogs: true }),
   );
   app.useLogger(app.get(Logger));
+  app.enableCors(); // ponytail: lets the static endpoint tester (public/tester.html) call the API
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 }
