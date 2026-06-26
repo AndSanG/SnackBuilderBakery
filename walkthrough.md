@@ -62,24 +62,24 @@ The controller is deliberately dumb: it pulls `id` off the URL and delegates. No
 [confirm-payment.ts](src/orders/application/confirm-payment.ts):
 
 ```ts
-async execute(orderId: string): Promise<Confirmation> {
-  const order = await this.orders.findById(orderId);
-  if (order === null) throw new OrderNotFoundError(orderId);
-  if (order.status !== OrderStatus.AwaitingPayment)
-    throw new OrderAlreadyConfirmedError(orderId);   // the 409 guard
+async execute(orderId: string, payment: Payment): Promise<Confirmation> {
+  const order = await this.orders.claimForPayment(orderId); // atomic: one winner if two requests race
+  if (order === null) throw new OrderAlreadyConfirmedError(orderId);
+
+  const settled = await this.payments.process(order.totalPrice, payment);
 
   const kitchenItems = order.items.map(...);
 
-  // estimate BEFORE enqueue, so the order's own items are not counted twice
-  const estimatedReadyTime = await this.kitchen.estimateReadyTime(kitchenItems);
-  await this.kitchen.enqueue(kitchenItems);
+  // enqueue and estimate in one call: closes the race where two simultaneous
+  // confirmations both estimate before either enqueues, giving both a wrong time
+  const estimatedReadyTime = await this.kitchen.enqueueAndEstimate(kitchenItems);
 
   await this.orders.save({ ...order, status: OrderStatus.InKitchen, estimatedReadyTime });
-  return { orderId: order.id, status: OrderStatus.InKitchen, estimatedReadyTime };
+  return { orderId: order.id, status: OrderStatus.InKitchen, estimatedReadyTime, payment: settled };
 }
 ```
 
-Notice `this.orders` and `this.kitchen` are **interfaces** (`OrderRepository`, `KitchenService`), not concrete classes. The use case never imports the in-memory repo or the real Kitchen. It states what it needs; something else decides what fulfills it. Those interfaces are the **ports**.
+Notice `this.orders`, `this.kitchen`, and `this.payments` are **interfaces** (`OrderRepository`, `KitchenService`, `PaymentProcessor`), not concrete classes. The use case never imports the in-memory repo or the real Kitchen. It states what it needs; something else decides what fulfills it. Those interfaces are the **ports**.
 
 ### (c) The ports
 
@@ -87,12 +87,12 @@ They live next to the use case that needs them: [order-repository.ts](src/orders
 
 ```ts
 export interface KitchenService {
-  enqueue(items: KitchenItem[]): Promise<void>;
-  estimateReadyTime(items: KitchenItem[]): Promise<Date>;
+  enqueueAndEstimate(items: KitchenItem[]): Promise<Date>;
+  readyTimes(): Promise<Map<string, Date>>;
 }
 ```
 
-The Kitchen module does not get to dictate a fat API. The consumer declares its needs.
+The Kitchen module does not get to dictate a fat API. The consumer declares its needs. `enqueueAndEstimate` is one atomic call so two simultaneous confirmations cannot both estimate before either enqueues. `readyTimes` is used by `ReconcileOrders` and by `ConfirmPayment`'s VIP ripple to refresh estimates after a higher-priority order reorders the queue.
 
 ### (d) The adapters implement the ports
 
@@ -104,15 +104,17 @@ async findById(id: string): Promise<Order | null> {
 }
 ```
 
-When you add Postgres later, you write a `PostgresOrderRepository` implementing the same interface and change one line of wiring. The use case is untouched. That is the swappability the whole structure buys you.
+The production build already ships a `PrismaOrderRepository` implementing the same interface, selected when `DATABASE_URL` is set. The use case is untouched. That is the swappability the whole structure buys you.
 
 The kitchen side is more interesting. [kitchen-service.adapter.ts](src/kitchen/infrastructure/kitchen-service.adapter.ts) wraps the stateful `Kitchen` and the `Clock`:
 
 ```ts
-async estimateReadyTime(items: KitchenItem[]): Promise<Date> {
+async enqueueAndEstimate(items: KitchenItem[]): Promise<Date> {
   const now = this.clock.now();
   this.kitchen.reconcile(now);                          // catch up to "now" first
-  return this.kitchen.estimateReadyTime(items, now);
+  const estimate = this.kitchen.estimateReadyTime(items, now);
+  this.kitchen.enqueue(items);
+  return estimate;
 }
 ```
 

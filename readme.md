@@ -5,7 +5,7 @@
 ![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791?logo=postgresql&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.1.3-blue)
+![Version](https://img.shields.io/badge/version-0.2.1-blue)
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
 
 Backend API for order management, storefront operations, and a priority-based kitchen scheduler.
@@ -26,11 +26,13 @@ Each feature depends on the ones above it, so the table also reflects the build 
 
 ## Current Scope
 
-The current build covers all seven features end to end: Menu Management, Order Placement, payment by cash or card (with amount validation, change, and a decline path), a priority-based Kitchen Scheduler (VIP, App/Delivery, Walk-in) with capacity-based estimation and the VIP ripple recalculation, and a Kitchen Monitoring view (which item is in which oven, and what is waiting). Persistence is in-memory and the card branch has no real gateway yet. See [assumptions.md](docs/assumptions.md) for the simplifications this implies, and [backlog.md](docs/backlog.md) for what is deferred.
+The current build covers all seven features end to end: Menu Management, Order Placement, payment by cash or card (with amount validation, change, and a decline path), a priority-based Kitchen Scheduler (VIP, App/Delivery, Walk-in) with capacity-based estimation and the VIP ripple recalculation, and a Kitchen Monitoring view (which item is in which oven, and what is waiting). Persistence is backed by PostgreSQL via Prisma when `DATABASE_URL` is set; the modules fall back to in-memory implementations when it is absent (the default for tests). See [assumptions.md](docs/assumptions.md) for the simplifications this implies, and [backlog.md](docs/backlog.md) for what is deferred.
 
 ## Getting Started
 
-Built with NestJS and TypeScript. Tests run on Jest. New to the codebase? Read [walkthrough.md](walkthrough.md) for a guided tour that traces one order through every layer.
+Built with NestJS and TypeScript. Tests run on Jest.
+
+**New to the codebase?** Start with [walkthrough.md](walkthrough.md) — it traces one order through every layer with annotated code and explains the two core design ideas (poll-based kitchen, Clock port).
 
 ### Docker (recommended)
 
@@ -43,6 +45,8 @@ docker compose down           # tear down
 - API: `http://localhost:3000`
 - Prometheus metrics: `http://localhost:3000/metrics`
 - Prometheus UI: `http://localhost:9090`
+
+See [docs/docker-usage.md](docs/docker-usage.md) for Prometheus queries, port overrides, image tagging, and troubleshooting.
 
 ### Requirements (local)
 
@@ -110,5 +114,7 @@ readme.md        this file
 
 ## Backlog
 
-- Database integration (Prisma + PostgreSQL): currently using in-memory repositories
 - Authentication: role-based access control (customer vs. store manager)
+- Real payment gateway: card processing currently auto-succeeds
+
+See [docs/backlog.md](docs/backlog.md) for the full list.
