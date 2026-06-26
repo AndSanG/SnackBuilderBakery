@@ -48,6 +48,10 @@ docker compose down           # tear down
 - Prometheus metrics: `http://localhost:3000/metrics`
 - Prometheus UI: `http://localhost:9090`
 
+**Logging:** every request emits a structured JSON log line to stdout (via `nestjs-pino`). Stream them live with `docker compose logs -f api`.
+
+**Metrics:** the API exposes a Prometheus-format `/metrics` endpoint. The bundled Prometheus service scrapes it every 15 seconds; query it at `http://localhost:9090`.
+
 See [docs/docker-usage.md](docs/docker-usage.md) for Prometheus queries, port overrides, image tagging, and troubleshooting.
 
 ### Requirements (local)
