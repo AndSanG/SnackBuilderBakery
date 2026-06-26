@@ -21,17 +21,34 @@ export class ConfirmPayment {
   ) {}
 
   async execute(orderId: string, payment: Payment): Promise<Confirmation> {
-    const order = await this.orders.findById(orderId);
-    if (order === null) {
+    const existing = await this.orders.findById(orderId);
+    if (existing === null) {
       throw new OrderNotFoundError(orderId);
     }
-    if (order.status !== OrderStatus.AwaitingPayment) {
+    if (existing.status !== OrderStatus.AwaitingPayment) {
       throw new OrderAlreadyConfirmedError(orderId);
     }
 
-    // Settle payment first. A decline throws and the order stays awaiting
-    // payment, so it never enters the kitchen unpaid.
-    const settled = await this.payments.process(order.totalPrice, payment);
+    // Atomically claim the order before charging, so a payment is processed at
+    // most once even if two confirmations race: the loser sees the order in
+    // PaymentProcessing and is rejected here, before the charge.
+    const order = await this.orders.claimForPayment(orderId);
+    if (order === null) {
+      throw new OrderAlreadyConfirmedError(orderId);
+    }
+
+    // Settle payment. A decline releases the claim so the customer can retry,
+    // and the order never enters the kitchen unpaid.
+    let settled: PaymentRecord;
+    try {
+      settled = await this.payments.process(order.totalPrice, payment);
+    } catch (error) {
+      await this.orders.save({
+        ...order,
+        status: OrderStatus.AwaitingPayment,
+      });
+      throw error;
+    }
 
     const priority = priorityTierFor(order.source);
     const kitchenItems: KitchenItem[] = order.items.map((item) => ({

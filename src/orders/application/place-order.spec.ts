@@ -32,6 +32,10 @@ class OrderRepositorySpy implements OrderRepository {
   async findByStatus(status: Order['status']): Promise<Order[]> {
     return this.savedOrders.filter((o) => o.status === status);
   }
+
+  async claimForPayment(): Promise<Order | null> {
+    return null;
+  }
 }
 
 const makeSUT = (): {
