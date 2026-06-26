@@ -1,6 +1,6 @@
 {
   "name": "snack-builder-bakery",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Backend API for order management, storefront operations, and a priority-based kitchen scheduler",
   "license": "UNLICENSED",
   "scripts": {
@@ -61,7 +61,11 @@
       "!main.ts"
     ],
     "coverageDirectory": "../coverage",
-    "coverageReporters": ["text", "lcov", "json-summary"],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "json-summary"
+    ],
     "coverageThreshold": {
       "global": {
         "statements": 90,
