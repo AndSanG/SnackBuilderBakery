@@ -77,8 +77,23 @@ The server listens on port 3000 by default. Override with the `PORT` environment
 ### Test
 
 ```bash
-npm test           # run the test suite (random order)
-npm run test:cov   # run with a coverage report
+npm test                  # unit tests (random order, in-memory, no DB needed)
+npm run test:cov          # with coverage report
+npm run test:e2e          # HTTP end-to-end suite (spins up the NestJS app)
+npm run test:integration  # Prisma repository tests (requires DATABASE_URL)
+```
+
+### Database (local)
+
+The unit and e2e suites run without a database. For the integration tests or to run the API locally against PostgreSQL:
+
+```bash
+# start a local Postgres instance (or use the bundled one)
+docker compose up -d db
+
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bakery
+npm run db:migrate   # apply migrations
+npm run start        # API now uses Prisma repositories
 ```
 
 ### Layout
