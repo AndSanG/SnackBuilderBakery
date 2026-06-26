@@ -1,0 +1,10 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "roots": ["<rootDir>/spike"],
+  "testRegex": ".spec.ts$",
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "testEnvironment": "node"
+}
