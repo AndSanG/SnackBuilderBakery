@@ -1,5 +1,6 @@
 import { Category } from '../../menu/domain/menu-item';
 import { OrderSource } from './order-source';
+import { PaymentRecord } from './payment';
 
 export enum OrderStatus {
   AwaitingPayment = 'AwaitingPayment',
@@ -23,4 +24,6 @@ export interface Order {
   // Set by ConfirmPayment from the Kitchen estimate, once the order enters the
   // kitchen. Absent while still AwaitingPayment.
   estimatedReadyTime?: Date;
+  // Recorded once payment succeeds. Absent while still AwaitingPayment.
+  payment?: PaymentRecord;
 }

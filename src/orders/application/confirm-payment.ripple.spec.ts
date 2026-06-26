@@ -3,10 +3,14 @@ import { InMemoryOrderRepository } from '../infrastructure/in-memory-order-repos
 import { KitchenServiceAdapter } from '../../kitchen/infrastructure/kitchen-service.adapter';
 import { Kitchen } from '../../kitchen/domain/kitchen';
 import { PriorityPolicy } from '../../kitchen/domain/scheduling-policy';
+import { LocalPaymentProcessor } from '../infrastructure/local-payment-processor';
 import { FakeClock } from '../../shared/clock/fake-clock';
 import { Order, OrderStatus } from '../domain/order';
 import { OrderSource } from '../domain/order-source';
+import { PaymentMethod } from '../domain/payment';
 import { Category } from '../../shared/domain/category';
+
+const cash = { method: PaymentMethod.Cash, amountTendered: 100000 };
 
 // Integration: real Kitchen (priority scheduling), real adapter, real repo. The
 // behavior under test is the VIP ripple, which only shows with the real
@@ -28,7 +32,10 @@ const makeSUT = () => {
     new Kitchen(new PriorityPolicy()),
     new FakeClock(),
   );
-  return { sut: new ConfirmPayment(orders, kitchen), orders };
+  return {
+    sut: new ConfirmPayment(orders, kitchen, new LocalPaymentProcessor()),
+    orders,
+  };
 };
 
 describe('ConfirmPayment VIP ripple', () => {
@@ -38,8 +45,8 @@ describe('ConfirmPayment VIP ripple', () => {
     await orders.save(breadOrder('walk', OrderSource.WalkIn, 12));
     await orders.save(breadOrder('vip', OrderSource.Vip, 1));
 
-    const walk = await sut.execute('walk');
-    await sut.execute('vip'); // VIP bread jumps to the front of the queue
+    const walk = await sut.execute('walk', cash);
+    await sut.execute('vip', cash); // VIP bread jumps to the front of the queue
 
     const bumped = await orders.findById('walk');
     expect(bumped?.estimatedReadyTime?.getTime()).toBeGreaterThan(
@@ -52,8 +59,8 @@ describe('ConfirmPayment VIP ripple', () => {
     await orders.save(breadOrder('vip', OrderSource.Vip, 12));
     await orders.save(breadOrder('walk', OrderSource.WalkIn, 1));
 
-    const vip = await sut.execute('vip');
-    await sut.execute('walk'); // lower priority, cannot bump the VIP
+    const vip = await sut.execute('vip', cash);
+    await sut.execute('walk', cash); // lower priority, cannot bump the VIP
 
     const unchanged = await orders.findById('vip');
     expect(unchanged?.estimatedReadyTime?.getTime()).toBe(

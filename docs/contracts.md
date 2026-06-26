@@ -64,7 +64,7 @@ Owned by Orders. Implemented by a Kitchen adapter. One port with both operations
 | UpdateMenuItem | item id, updated fields | the updated item | not found, invalid data |
 | RemoveMenuItem | item id | success | not found |
 | PlaceOrder | requested items (item id and quantity each), order source | a ticket: order reference and total price | unknown item, empty request |
-| ConfirmPayment | order reference | a confirmation: order reference, status, estimated ready time | not found, already confirmed |
+| ConfirmPayment | order reference, payment (cash or card) | a confirmation: order reference, status, estimated ready time, settled payment | not found, already confirmed, payment declined |
 | TrackOrder | order reference | order reference, status, estimated ready time | not found |
 | ReconcileKitchen | the current instant | the kitchen advanced: finished items completed, free slots filled from the queue | none |
 | EstimateOrderReadyTime | an order's items, current kitchen state, the current instant | the estimated ready time | none |

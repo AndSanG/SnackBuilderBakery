@@ -1,22 +1,26 @@
 import { Order, OrderStatus } from '../domain/order';
+import { Payment, PaymentRecord } from '../domain/payment';
 import { priorityTierFor } from '../domain/priority-tier';
 import { OrderRepository } from './order-repository';
 import { KitchenItem, KitchenService } from './kitchen-service';
+import { PaymentProcessor } from './payment-processor';
 import { OrderAlreadyConfirmedError, OrderNotFoundError } from './order-errors';
 
 export interface Confirmation {
   orderId: string;
   status: OrderStatus;
   estimatedReadyTime: Date;
+  payment: PaymentRecord;
 }
 
 export class ConfirmPayment {
   constructor(
     private readonly orders: OrderRepository,
     private readonly kitchen: KitchenService,
+    private readonly payments: PaymentProcessor,
   ) {}
 
-  async execute(orderId: string): Promise<Confirmation> {
+  async execute(orderId: string, payment: Payment): Promise<Confirmation> {
     const order = await this.orders.findById(orderId);
     if (order === null) {
       throw new OrderNotFoundError(orderId);
@@ -24,6 +28,10 @@ export class ConfirmPayment {
     if (order.status !== OrderStatus.AwaitingPayment) {
       throw new OrderAlreadyConfirmedError(orderId);
     }
+
+    // Settle payment first. A decline throws and the order stays awaiting
+    // payment, so it never enters the kitchen unpaid.
+    const settled = await this.payments.process(order.totalPrice, payment);
 
     const priority = priorityTierFor(order.source);
     const kitchenItems: KitchenItem[] = order.items.map((item) => ({
@@ -43,6 +51,7 @@ export class ConfirmPayment {
       ...order,
       status: OrderStatus.InKitchen,
       estimatedReadyTime,
+      payment: settled,
     };
     await this.orders.save(confirmed);
 
@@ -52,6 +61,7 @@ export class ConfirmPayment {
       orderId: order.id,
       status: OrderStatus.InKitchen,
       estimatedReadyTime,
+      payment: settled,
     };
   }
 
