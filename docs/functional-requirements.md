@@ -187,6 +187,33 @@ Given the kitchen has items baking and queued
   And the kitchen state should be identical before and after the estimate
 ```
 
+## Kitchen Monitoring Feature Specs
+
+### Story: Store manager views the current kitchen state
+
+#### Narrative
+
+```gherkin
+As a store manager
+I want to see what is baking in each oven and what is waiting in the queue
+So I can monitor kitchen activity and anticipate when orders will be ready
+```
+
+#### Scenarios (Acceptance criteria)
+
+```gherkin
+Given items baking in the kitchen
+ When the manager requests the kitchen view
+ Then the system should show each oven's trays with the item baking on each tray
+  And the estimated ready time for each baking item
+  And the items still waiting in the queue in bake order
+
+Given no items baking and no items waiting
+ When the manager requests the kitchen view
+ Then the system should show all trays as empty
+  And the waiting queue as empty
+```
+
 ## Use Cases
 
 ### View Menu Use Case

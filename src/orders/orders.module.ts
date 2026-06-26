@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { MenuModule, MENU_REPOSITORY } from '../menu/menu.module';
 import { MenuRepository } from '../menu/application/menu-repository';
 import { MenuCatalogAdapter } from '../menu/infrastructure/menu-catalog.adapter';
@@ -17,13 +18,21 @@ import { OrderRepository, ORDER_REPOSITORY } from './application/order-repositor
 import { KitchenService, KITCHEN_SERVICE } from './application/kitchen-service';
 import { PaymentProcessor, PAYMENT_PROCESSOR } from './application/payment-processor';
 import { InMemoryOrderRepository } from './infrastructure/in-memory-order-repository';
+import { PrismaOrderRepository } from './infrastructure/prisma-order-repository';
 import { LocalPaymentProcessor } from './infrastructure/local-payment-processor';
 
 @Module({
   imports: [MenuModule, KitchenModule, SharedModule],
   controllers: [OrdersController],
   providers: [
-    { provide: ORDER_REPOSITORY, useClass: InMemoryOrderRepository },
+    {
+      // ponytail: env-based switch; DATABASE_URL absent means in-memory (unit tests stay fast)
+      provide: ORDER_REPOSITORY,
+      useFactory: (): OrderRepository =>
+        process.env.DATABASE_URL
+          ? new PrismaOrderRepository(new PrismaClient())
+          : new InMemoryOrderRepository(),
+    },
     { provide: PAYMENT_PROCESSOR, useClass: LocalPaymentProcessor },
     {
       provide: MENU_CATALOG,

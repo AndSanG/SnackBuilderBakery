@@ -36,6 +36,18 @@ For an order with mixed bake times, the estimated ready time is the completion t
 
 Reasoning: the customer receives the complete order at once, so readiness is bounded by the last item to finish.
 
+## 7. The Prisma repositories are the only implementations that change on DATABASE_URL
+
+When `DATABASE_URL` is set, both `OrderRepository` and `MenuRepository` are
+backed by Prisma + PostgreSQL. When it is absent, the in-memory implementations
+are used. No other code changes: domain, application, and presentation layers
+are unaffected.
+
+The atomic SQL guards (compare-and-set UPDATE statements) replace the
+synchronous in-memory compare-and-set idiom. The behavioral contract is
+identical; only the mechanism differs. See the concurrency audit for the
+SQL translation of each guard.
+
 ## 6. Payment is processed at confirmation, with a decline path
 
 Confirming an order processes a payment by cash or card. Cash is validated: the amount tendered must cover the total, and change is returned. Card is settled through a `PaymentProcessor` port. A decline (insufficient cash, or a declined card) throws, the order stays awaiting payment, and it never enters the kitchen unpaid. The lifecycle in assumption 3 is intact: the kitchen still only sees paid orders.

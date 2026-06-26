@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Orders are created once with their items; subsequent saves only change
+// scalar fields (status, estimatedReadyTime, payment columns).
+model Order {
+  id                 String      @id
+  status             String
+  source             String
+  totalPrice         Int
+  estimatedReadyTime DateTime?
+  paymentMethod      String?
+  amountPaid         Int?
+  change             Int?
+  items              OrderItem[]
+
+  @@index([status])
+}
+
+model OrderItem {
+  id       String @id
+  category String
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model MenuItem {
+  id       String @id
+  name     String
+  category String
+  price    Int
+}

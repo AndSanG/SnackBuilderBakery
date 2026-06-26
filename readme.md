@@ -2,7 +2,10 @@
 
 [![CI](https://github.com/AndSanG/SnackBuilderBakery/actions/workflows/ci.yml/badge.svg)](https://github.com/AndSanG/SnackBuilderBakery/actions/workflows/ci.yml)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/AndSanG/SnackBuilderBakery/pkgs/container/snackbuilderbakery)
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Database](https://img.shields.io/badge/database-PostgreSQL-336791?logo=postgresql&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.1.3-blue)
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
 
 Backend API for order management, storefront operations, and a priority-based kitchen scheduler.
