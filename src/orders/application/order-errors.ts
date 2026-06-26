@@ -25,3 +25,10 @@ export class OrderAlreadyConfirmedError extends Error {
     this.name = 'OrderAlreadyConfirmedError';
   }
 }
+
+export class PaymentDeclinedError extends Error {
+  constructor(reason: string) {
+    super(`Payment declined: ${reason}`);
+    this.name = 'PaymentDeclinedError';
+  }
+}
