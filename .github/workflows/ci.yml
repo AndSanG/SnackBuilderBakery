@@ -6,6 +6,23 @@ on:
     branches: [master]
 
 jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check version was bumped
+        run: |
+          BASE=$(git show origin/${{ github.base_ref }}:package.json | grep '"version"' | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+          HEAD=$(grep '"version"' package.json | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+          if [ "$BASE" = "$HEAD" ]; then
+            echo "Version ($HEAD) matches ${{ github.base_ref }}. Bump package.json before merging."
+            exit 1
+          fi
+          echo "Version bumped: $BASE -> $HEAD"
+
   commitlint:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'

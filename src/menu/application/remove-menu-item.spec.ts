@@ -19,15 +19,20 @@ class MenuRepositorySpy implements MenuRepository {
     return this.found;
   }
 
-  async update(): Promise<void> {
-    // unused here
+  async applyUpdate(): Promise<MenuItem | null> {
+    // unused by RemoveMenuItem
+    return null;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string): Promise<boolean> {
+    if (this.found === null) {
+      return false;
+    }
     this.removedIds.push(id);
+    return true;
   }
 
-  stubFindById(item: MenuItem | null): void {
+  stubExisting(item: MenuItem | null): void {
     this.found = item;
   }
 }
@@ -54,7 +59,7 @@ describe('RemoveMenuItem', () => {
 
   it('removes the existing item from the repository', async () => {
     const { sut, repository } = makeSUT();
-    repository.stubFindById(existingItem);
+    repository.stubExisting(existingItem);
 
     await sut.execute('item-1');
 
@@ -63,7 +68,7 @@ describe('RemoveMenuItem', () => {
 
   it('fails with a not found error and does not remove when the item does not exist', async () => {
     const { sut, repository } = makeSUT();
-    repository.stubFindById(null);
+    repository.stubExisting(null);
 
     await expect(sut.execute('missing')).rejects.toBeInstanceOf(
       MenuItemNotFoundError,

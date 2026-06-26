@@ -5,10 +5,9 @@ export class RemoveMenuItem {
   constructor(private readonly repository: MenuRepository) {}
 
   async execute(id: string): Promise<void> {
-    const existing = await this.repository.findById(id);
-    if (existing === null) {
+    const removed = await this.repository.remove(id);
+    if (!removed) {
       throw new MenuItemNotFoundError(id);
     }
-    await this.repository.remove(id);
   }
 }

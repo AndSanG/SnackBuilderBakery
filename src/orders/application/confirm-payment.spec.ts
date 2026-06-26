@@ -38,6 +38,10 @@ class OrderRepositorySpy implements OrderRepository {
     return this.order;
   }
 
+  async updateEstimateIfInKitchen(): Promise<void> {
+    // findByStatus returns [], so the ripple never reaches this spy.
+  }
+
   stubFindById(order: Order | null): void {
     this.order = order;
   }
@@ -48,13 +52,9 @@ class KitchenServiceSpy implements KitchenService {
   enqueued: KitchenItem[][] = [];
   private estimate = new Date('2026-01-01T00:30:00.000Z');
 
-  async enqueue(items: KitchenItem[]): Promise<void> {
-    this.calls.push('enqueue');
+  async enqueueAndEstimate(items: KitchenItem[]): Promise<Date> {
+    this.calls.push('enqueueAndEstimate');
     this.enqueued.push(items);
-  }
-
-  async estimateReadyTime(): Promise<Date> {
-    this.calls.push('estimate');
     return this.estimate;
   }
 
@@ -121,13 +121,13 @@ describe('ConfirmPayment', () => {
     ]);
   });
 
-  it('estimates the ready time before enqueueing the items', async () => {
+  it('enqueues and estimates atomically, then refreshes other in-kitchen orders', async () => {
     const { sut, orders, kitchen } = makeSUT();
     orders.stubFindById(awaitingOrder());
 
     await sut.execute('order-1', cash);
 
-    expect(kitchen.calls).toEqual(['estimate', 'enqueue', 'readyTimes']);
+    expect(kitchen.calls).toEqual(['enqueueAndEstimate', 'readyTimes']);
   });
 
   it('moves the order into the kitchen with the estimated ready time', async () => {

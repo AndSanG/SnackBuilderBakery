@@ -19,12 +19,14 @@ class MenuRepositorySpy implements MenuRepository {
     return null;
   }
 
-  async update(): Promise<void> {
+  async applyUpdate(): Promise<MenuItem | null> {
     // unused by ViewMenu
+    return null;
   }
 
-  async remove(): Promise<void> {
+  async remove(): Promise<boolean> {
     // unused by ViewMenu
+    return false;
   }
 
   stubGetAll(items: MenuItem[]): void {

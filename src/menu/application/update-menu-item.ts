@@ -7,12 +7,10 @@ export class UpdateMenuItem {
   constructor(private readonly repository: MenuRepository) {}
 
   async execute(id: string, fields: Partial<NewMenuItem>): Promise<MenuItem> {
-    const existing = await this.repository.findById(id);
-    if (existing === null) {
+    const updated = await this.repository.applyUpdate(id, fields);
+    if (updated === null) {
       throw new MenuItemNotFoundError(id);
     }
-    const updated: MenuItem = { ...existing, ...fields };
-    await this.repository.update(updated);
     return updated;
   }
 }

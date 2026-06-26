@@ -1,5 +1,10 @@
 # Snack Builder Bakery API
 
+[![CI](https://github.com/AndSanG/SnackBuilderBakery/actions/workflows/ci.yml/badge.svg)](https://github.com/AndSanG/SnackBuilderBakery/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/AndSanG/SnackBuilderBakery/pkgs/container/snackbuilderbakery)
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)
+
 Backend API for order management, storefront operations, and a priority-based kitchen scheduler.
 
 ## Features

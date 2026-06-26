@@ -11,17 +11,13 @@ export class KitchenServiceAdapter implements KitchenService {
     private readonly clock: Clock,
   ) {}
 
-  async enqueue(items: KitchenItem[]): Promise<void> {
+  async enqueueAndEstimate(items: KitchenItem[]): Promise<Date> {
     const now = this.clock.now();
     this.kitchen.reconcile(now);
+    const estimate = this.kitchen.estimateReadyTime(items, now);
     this.kitchen.enqueue(items);
     this.kitchen.reconcile(now);
-  }
-
-  async estimateReadyTime(items: KitchenItem[]): Promise<Date> {
-    const now = this.clock.now();
-    this.kitchen.reconcile(now);
-    return this.kitchen.estimateReadyTime(items, now);
+    return estimate;
   }
 
   async readyTimes(): Promise<Map<string, Date>> {

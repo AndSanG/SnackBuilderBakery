@@ -19,15 +19,24 @@ class MenuRepositorySpy implements MenuRepository {
     return this.found;
   }
 
-  async update(item: MenuItem): Promise<void> {
-    this.updatedItems.push(item);
+  async applyUpdate(
+    _id: string,
+    fields: Partial<Omit<MenuItem, 'id'>>,
+  ): Promise<MenuItem | null> {
+    if (this.found === null) {
+      return null;
+    }
+    const updated = { ...this.found, ...fields };
+    this.updatedItems.push(updated);
+    return updated;
   }
 
-  async remove(): Promise<void> {
+  async remove(): Promise<boolean> {
     // unused by UpdateMenuItem
+    return false;
   }
 
-  stubFindById(item: MenuItem | null): void {
+  stubExisting(item: MenuItem | null): void {
     this.found = item;
   }
 }
@@ -54,7 +63,7 @@ describe('UpdateMenuItem', () => {
 
   it('persists the existing item with the merged details', async () => {
     const { sut, repository } = makeSUT();
-    repository.stubFindById(existingItem);
+    repository.stubExisting(existingItem);
 
     await sut.execute('item-1', { name: 'New Name', price: 350 });
 
@@ -65,7 +74,7 @@ describe('UpdateMenuItem', () => {
 
   it('returns the updated item', async () => {
     const { sut, repository } = makeSUT();
-    repository.stubFindById(existingItem);
+    repository.stubExisting(existingItem);
 
     const result = await sut.execute('item-1', { name: 'New Name', price: 350 });
 
@@ -79,7 +88,7 @@ describe('UpdateMenuItem', () => {
 
   it('fails with a not found error and does not persist when the item does not exist', async () => {
     const { sut, repository } = makeSUT();
-    repository.stubFindById(null);
+    repository.stubExisting(null);
 
     await expect(sut.execute('missing', { name: 'x' })).rejects.toBeInstanceOf(
       MenuItemNotFoundError,

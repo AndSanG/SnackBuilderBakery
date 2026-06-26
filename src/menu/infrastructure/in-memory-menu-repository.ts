@@ -16,11 +16,24 @@ export class InMemoryMenuRepository implements MenuRepository {
     return this.items.get(id) ?? null;
   }
 
-  async update(item: MenuItem): Promise<void> {
-    this.items.set(item.id, item);
+  // Synchronous get/merge/set: no await between the existence check and the
+  // write, so a concurrent remove cannot interleave and be resurrected, and two
+  // updates cannot clobber each other's fields. Mirrors a database
+  // UPDATE ... SET ... WHERE id=? returning the affected row.
+  async applyUpdate(
+    id: string,
+    fields: Partial<Omit<MenuItem, 'id'>>,
+  ): Promise<MenuItem | null> {
+    const existing = this.items.get(id);
+    if (!existing) {
+      return null;
+    }
+    const updated = { ...existing, ...fields };
+    this.items.set(id, updated);
+    return updated;
   }
 
-  async remove(id: string): Promise<void> {
-    this.items.delete(id);
+  async remove(id: string): Promise<boolean> {
+    return this.items.delete(id);
   }
 }

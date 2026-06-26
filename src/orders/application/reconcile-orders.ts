@@ -19,6 +19,9 @@ export class ReconcileOrders {
 
   async execute(): Promise<void> {
     const now = this.clock.now().getTime();
+    // Concurrent runs are safe: both see the same InKitchen snapshot and both
+    // save the same Ready state. The InMemoryOrderRepository.save is a Map.set,
+    // so the double-write is idempotent and produces no corruption.
     const baking = await this.orders.findByStatus(OrderStatus.InKitchen);
 
     for (const order of baking) {
