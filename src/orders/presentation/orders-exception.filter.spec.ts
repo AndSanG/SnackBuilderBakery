@@ -4,6 +4,7 @@ import {
   EmptyOrderError,
   OrderAlreadyConfirmedError,
   OrderNotFoundError,
+  PaymentDeclinedError,
   UnknownMenuItemError,
 } from '../application/order-errors';
 
@@ -62,5 +63,16 @@ describe('OrdersExceptionFilter', () => {
     );
 
     expect(sent.status).toBe(409);
+  });
+
+  it('maps a declined payment to 402', () => {
+    const { host, sent } = makeHost();
+
+    new OrdersExceptionFilter().catch(
+      new PaymentDeclinedError('insufficient cash tendered'),
+      host,
+    );
+
+    expect(sent.status).toBe(402);
   });
 });

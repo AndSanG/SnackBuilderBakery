@@ -12,7 +12,11 @@ import { FakeClock } from '../../shared/clock/fake-clock';
 import { OrderSource } from '../domain/order-source';
 import { OrderStatus } from '../domain/order';
 import { OrderNotFoundError } from '../application/order-errors';
+import { PaymentMethod } from '../domain/payment';
+import { LocalPaymentProcessor } from '../infrastructure/local-payment-processor';
 import { Category } from '../../shared/domain/category';
+
+const cash = { method: PaymentMethod.Cash, amountTendered: 1000 };
 
 const makeSUT = async (): Promise<{
   sut: OrdersController;
@@ -31,7 +35,7 @@ const makeSUT = async (): Promise<{
   const sut = new OrdersController(
     new PlaceOrder(new MenuCatalogAdapter(menuRepo), orderRepo),
     new TrackOrder(orderRepo),
-    new ConfirmPayment(orderRepo, kitchen),
+    new ConfirmPayment(orderRepo, kitchen, new LocalPaymentProcessor()),
     new ReconcileOrders(orderRepo, clock),
   );
   return { sut, clock };
@@ -79,7 +83,7 @@ describe('OrdersController', () => {
       source: OrderSource.WalkIn,
     });
 
-    const confirmation = await sut.confirm(ticket.orderId);
+    const confirmation = await sut.confirm(ticket.orderId, cash);
     const tracked = await sut.track(ticket.orderId);
 
     expect(confirmation.status).toBe(OrderStatus.InKitchen);
@@ -93,7 +97,7 @@ describe('OrdersController', () => {
       items: [{ menuItemId: 'cookie', quantity: 1 }],
       source: OrderSource.WalkIn,
     });
-    await sut.confirm(ticket.orderId);
+    await sut.confirm(ticket.orderId, cash);
 
     clock.advance(5); // a cookie bakes in 5 minutes
     await sut.reconcile();

@@ -36,8 +36,8 @@ For an order with mixed bake times, the estimated ready time is the completion t
 
 Reasoning: the customer receives the complete order at once, so readiness is bounded by the last item to finish.
 
-## 6. Payment always succeeds
+## 6. Payment is processed at confirmation, with a decline path
 
-Confirming payment always succeeds immediately. There is no cash or card handling, amount validation, or failure path yet: the confirmation step accepts any order and transitions it straight into the kitchen queue.
+Confirming an order processes a payment by cash or card. Cash is validated: the amount tendered must cover the total, and change is returned. Card is settled through a `PaymentProcessor` port. A decline (insufficient cash, or a declined card) throws, the order stays awaiting payment, and it never enters the kitchen unpaid. The lifecycle in assumption 3 is intact: the kitchen still only sees paid orders.
 
-Reasoning: the focus is the core order-to-bake loop. Real payment processing (cash and card, amount validation, failures, refunds) is deferred. The lifecycle in assumption 3 stays intact; only the payment step is simplified to an always-successful confirmation.
+Reasoning: payment is real domain behavior now (method, amount validation, change, failure), behind a port so the card branch can become a real gateway later. Still deferred: an actual card gateway integration (the local processor approves any token except a sentinel), refunds, and partial payments.

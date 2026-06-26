@@ -1,28 +1,53 @@
 import { Order, OrderStatus } from '../domain/order';
+import { Payment, PaymentRecord } from '../domain/payment';
 import { priorityTierFor } from '../domain/priority-tier';
 import { OrderRepository } from './order-repository';
 import { KitchenItem, KitchenService } from './kitchen-service';
+import { PaymentProcessor } from './payment-processor';
 import { OrderAlreadyConfirmedError, OrderNotFoundError } from './order-errors';
 
 export interface Confirmation {
   orderId: string;
   status: OrderStatus;
   estimatedReadyTime: Date;
+  payment: PaymentRecord;
 }
 
 export class ConfirmPayment {
   constructor(
     private readonly orders: OrderRepository,
     private readonly kitchen: KitchenService,
+    private readonly payments: PaymentProcessor,
   ) {}
 
-  async execute(orderId: string): Promise<Confirmation> {
-    const order = await this.orders.findById(orderId);
-    if (order === null) {
+  async execute(orderId: string, payment: Payment): Promise<Confirmation> {
+    const existing = await this.orders.findById(orderId);
+    if (existing === null) {
       throw new OrderNotFoundError(orderId);
     }
-    if (order.status !== OrderStatus.AwaitingPayment) {
+    if (existing.status !== OrderStatus.AwaitingPayment) {
       throw new OrderAlreadyConfirmedError(orderId);
+    }
+
+    // Atomically claim the order before charging, so a payment is processed at
+    // most once even if two confirmations race: the loser sees the order in
+    // PaymentProcessing and is rejected here, before the charge.
+    const order = await this.orders.claimForPayment(orderId);
+    if (order === null) {
+      throw new OrderAlreadyConfirmedError(orderId);
+    }
+
+    // Settle payment. A decline releases the claim so the customer can retry,
+    // and the order never enters the kitchen unpaid.
+    let settled: PaymentRecord;
+    try {
+      settled = await this.payments.process(order.totalPrice, payment);
+    } catch (error) {
+      await this.orders.save({
+        ...order,
+        status: OrderStatus.AwaitingPayment,
+      });
+      throw error;
     }
 
     const priority = priorityTierFor(order.source);
@@ -43,6 +68,7 @@ export class ConfirmPayment {
       ...order,
       status: OrderStatus.InKitchen,
       estimatedReadyTime,
+      payment: settled,
     };
     await this.orders.save(confirmed);
 
@@ -52,6 +78,7 @@ export class ConfirmPayment {
       orderId: order.id,
       status: OrderStatus.InKitchen,
       estimatedReadyTime,
+      payment: settled,
     };
   }
 

@@ -1,10 +1,18 @@
 import { ConfirmPayment } from './confirm-payment';
 import { OrderRepository } from './order-repository';
 import { KitchenService, KitchenItem } from './kitchen-service';
-import { OrderAlreadyConfirmedError, OrderNotFoundError } from './order-errors';
+import {
+  OrderAlreadyConfirmedError,
+  OrderNotFoundError,
+  PaymentDeclinedError,
+} from './order-errors';
 import { Order, OrderStatus } from '../domain/order';
 import { OrderSource } from '../domain/order-source';
+import { PaymentMethod } from '../domain/payment';
+import { LocalPaymentProcessor } from '../infrastructure/local-payment-processor';
 import { Category } from '../../shared/domain/category';
+
+const cash = { method: PaymentMethod.Cash, amountTendered: 1000 };
 
 class OrderRepositorySpy implements OrderRepository {
   savedOrders: Order[] = [];
@@ -20,6 +28,14 @@ class OrderRepositorySpy implements OrderRepository {
 
   async findByStatus(): Promise<Order[]> {
     return [];
+  }
+
+  async claimForPayment(): Promise<Order | null> {
+    if (!this.order || this.order.status !== OrderStatus.AwaitingPayment) {
+      return null;
+    }
+    this.order = { ...this.order, status: OrderStatus.PaymentProcessing };
+    return this.order;
   }
 
   stubFindById(order: Order | null): void {
@@ -70,7 +86,7 @@ const makeSUT = (): {
 } => {
   const orders = new OrderRepositorySpy();
   const kitchen = new KitchenServiceSpy();
-  const sut = new ConfirmPayment(orders, kitchen);
+  const sut = new ConfirmPayment(orders, kitchen, new LocalPaymentProcessor());
   return { sut, orders, kitchen };
 };
 
@@ -79,7 +95,7 @@ describe('ConfirmPayment', () => {
     const { sut, orders } = makeSUT();
     orders.stubFindById(null);
 
-    await expect(sut.execute('missing')).rejects.toBeInstanceOf(
+    await expect(sut.execute('missing', cash)).rejects.toBeInstanceOf(
       OrderNotFoundError,
     );
   });
@@ -88,7 +104,7 @@ describe('ConfirmPayment', () => {
     const { sut, orders } = makeSUT();
     orders.stubFindById({ ...awaitingOrder(), status: OrderStatus.InKitchen });
 
-    await expect(sut.execute('order-1')).rejects.toBeInstanceOf(
+    await expect(sut.execute('order-1', cash)).rejects.toBeInstanceOf(
       OrderAlreadyConfirmedError,
     );
   });
@@ -97,7 +113,7 @@ describe('ConfirmPayment', () => {
     const { sut, orders, kitchen } = makeSUT();
     orders.stubFindById(awaitingOrder()); // a VIP order, priority tier 1
 
-    await sut.execute('order-1');
+    await sut.execute('order-1', cash);
 
     expect(kitchen.enqueued[0]).toEqual([
       { id: 'i1', orderId: 'order-1', category: Category.Cookie, priority: 1 },
@@ -109,7 +125,7 @@ describe('ConfirmPayment', () => {
     const { sut, orders, kitchen } = makeSUT();
     orders.stubFindById(awaitingOrder());
 
-    await sut.execute('order-1');
+    await sut.execute('order-1', cash);
 
     expect(kitchen.calls).toEqual(['estimate', 'enqueue', 'readyTimes']);
   });
@@ -120,14 +136,31 @@ describe('ConfirmPayment', () => {
     const estimate = new Date('2026-01-01T00:20:00.000Z');
     kitchen.stubEstimate(estimate);
 
-    const result = await sut.execute('order-1');
+    const result = await sut.execute('order-1', cash);
 
     expect(result).toEqual({
       orderId: 'order-1',
       status: OrderStatus.InKitchen,
       estimatedReadyTime: estimate,
+      payment: { method: PaymentMethod.Cash, amountPaid: 650, change: 350 },
     });
     expect(orders.savedOrders[0].status).toBe(OrderStatus.InKitchen);
     expect(orders.savedOrders[0].estimatedReadyTime).toEqual(estimate);
+  });
+
+  it('declines insufficient payment and leaves the order out of the kitchen', async () => {
+    const { sut, orders, kitchen } = makeSUT();
+    orders.stubFindById(awaitingOrder()); // totals 650
+
+    await expect(
+      sut.execute('order-1', {
+        method: PaymentMethod.Cash,
+        amountTendered: 500,
+      }),
+    ).rejects.toBeInstanceOf(PaymentDeclinedError);
+
+    expect(kitchen.calls).toEqual([]); // never enqueued
+    // the claim is released back to AwaitingPayment so the customer can retry
+    expect(orders.savedOrders.at(-1)?.status).toBe(OrderStatus.AwaitingPayment);
   });
 });

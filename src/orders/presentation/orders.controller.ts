@@ -4,6 +4,7 @@ import { TrackOrder } from '../application/track-order';
 import { ConfirmPayment } from '../application/confirm-payment';
 import { ReconcileOrders } from '../application/reconcile-orders';
 import { PlaceOrderDto } from './dto/place-order.dto';
+import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 
 // The use cases already return view-shaped results (Ticket, OrderStatusView,
 // Confirmation), so the controller has no entity to map: it just delegates.
@@ -29,8 +30,8 @@ export class OrdersController {
   }
 
   @Post(':id/confirm')
-  async confirm(@Param('id') id: string) {
-    return this.confirmPayment.execute(id);
+  async confirm(@Param('id') id: string, @Body() dto: ConfirmPaymentDto) {
+    return this.confirmPayment.execute(id, dto);
   }
 
   @Get(':id')

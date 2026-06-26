@@ -19,4 +19,23 @@ export class InMemoryOrderRepository implements OrderRepository {
     // See docs/decisions/scheduling-data-structures.md.
     return [...this.orders.values()].filter((order) => order.status === status);
   }
+
+  // The get, the check, and the set run synchronously with no await between
+  // them, so the event loop cannot interleave a second claim: exactly one
+  // concurrent caller flips AwaitingPayment to PaymentProcessing.
+  //
+  // ponytail: in-memory compare-and-set. A database does the same with
+  // UPDATE ... SET status='PaymentProcessing' WHERE id=? AND status='AwaitingPayment'
+  // and checking the affected row count. An idempotency key for safe client
+  // retries is a separate, request-scoped concern that belongs at the gateway
+  // boundary when a real card gateway lands, not here.
+  async claimForPayment(id: string): Promise<Order | null> {
+    const order = this.orders.get(id);
+    if (!order || order.status !== OrderStatus.AwaitingPayment) {
+      return null;
+    }
+    const claimed = { ...order, status: OrderStatus.PaymentProcessing };
+    this.orders.set(id, claimed);
+    return claimed;
+  }
 }

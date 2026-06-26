@@ -280,19 +280,25 @@ Given the kitchen has items baking and queued
 
 #### Data:
 - Order reference
+- Payment (method: cash or card; amount tendered for cash; card token for card)
 
 #### Primary course (happy path):
 1. Execute "Confirm Payment" command with above data.
-2. System confirms payment successfully.
+2. System settles the payment (cash must cover the total, returning change; card is settled through the processor).
 3. System enqueues each order item in the kitchen.
 4. System estimates the order ready time.
-5. System delivers a confirmation with the estimated ready time.
+5. System records the payment on the order.
+6. System delivers a confirmation with the estimated ready time and the settled payment.
 
 #### Unknown order course (sad path):
 1. System delivers not found error.
 
 #### Already confirmed course (sad path):
 1. System delivers invalid state error.
+
+#### Declined payment course (sad path):
+1. System leaves the order awaiting payment and out of the kitchen.
+2. System delivers a payment declined error.
 
 ---
 
