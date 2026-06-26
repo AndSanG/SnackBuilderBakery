@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ViewMenu } from '../application/view-menu';
 import { AddMenuItem } from '../application/add-menu-item';
 import { UpdateMenuItem } from '../application/update-menu-item';
@@ -25,6 +26,7 @@ const toResponse = (item: MenuItem) => ({
   price: item.price,
 });
 
+@ApiTags('menu')
 @Controller('menu')
 export class MenuController {
   constructor(
@@ -34,22 +36,26 @@ export class MenuController {
     private readonly removeMenuItem: RemoveMenuItem,
   ) {}
 
+  @ApiOperation({ summary: 'List all menu items' })
   @Get()
   async list() {
     const items = await this.viewMenu.execute();
     return items.map(toResponse);
   }
 
+  @ApiOperation({ summary: 'Add a menu item' })
   @Post()
   async create(@Body() dto: CreateMenuItemDto) {
     return toResponse(await this.addMenuItem.execute(dto));
   }
 
+  @ApiOperation({ summary: 'Update a menu item' })
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateMenuItemDto) {
     return toResponse(await this.updateMenuItem.execute(id, dto));
   }
 
+  @ApiOperation({ summary: 'Remove a menu item' })
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {

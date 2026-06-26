@@ -45,6 +45,7 @@ docker compose down           # tear down
 ```
 
 - API: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/api`
 - Prometheus metrics: `http://localhost:3000/metrics`
 - Prometheus UI: `http://localhost:9090`
 
