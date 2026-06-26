@@ -43,7 +43,7 @@ Provides the adapter implementing Orders' `Kitchen` port.
 
 The kitchen has two responsibilities: tracking oven capacity (which slots are occupied and when they free) and scheduling (the queue and the choice of what bakes next). They are kept in one `Kitchen` type because scheduling has to read slot availability to place items; a module boundary between them would create a chatty port for no benefit at this stage.
 
-The ordering rule is FIFO and lives in a single place inside `Kitchen`. We do not introduce a `SchedulingPolicy` Strategy yet, because it would have one implementation. That abstraction is introduced in the same iteration that adds priority ordering (feature 5), where the second implementation makes it earn its place. The single FIFO method is the seam: extracting the Strategy later is a localized change, not a rewrite.
+The ordering rule lives behind a `SchedulingPolicy` Strategy that `Kitchen` consumes. It has two implementations: `FifoPolicy` (arrival order) and `PriorityPolicy` (highest tier first, arrival order within a tier). The abstraction was deferred until priority ordering (feature 5) arrived and gave it a second implementation, so it earns its place rather than being speculative. Both `reconcile` and the estimate order the waiting queue through the policy, so a prediction can never diverge from real scheduling. No preemption lives in `Kitchen` itself: the policy only orders the waiting queue, never what is already baking.
 
 ## Ports
 
@@ -87,7 +87,7 @@ graph LR
 
 ## Visual: inside the Kitchen module
 
-Both use cases delegate to the one `Kitchen` type, so the scheduling logic lives in a single place. `Kitchen` owns the slots and the queue and decides the next item to bake (FIFO for now, in one method). `ReconcileKitchen` runs this for real and changes state. `EstimateOrderReadyTime` runs the same steps on a copy and changes nothing, which is why an estimate can never drift from real scheduling.
+Both use cases delegate to the one `Kitchen` type, so the scheduling logic lives in a single place. `Kitchen` owns the slots and the queue and decides the next item to bake through its `SchedulingPolicy`. `ReconcileKitchen` runs this for real and changes state. `EstimateOrderReadyTime` runs the same steps on a copy and changes nothing, which is why an estimate can never drift from real scheduling.
 
 ```mermaid
 graph TD
@@ -97,7 +97,7 @@ graph TD
   end
 
   subgraph KitchenType [Kitchen: state and scheduling logic]
-    K[complete finished, fill free slots, pick next item FIFO]
+    K[complete finished, fill free slots, pick next item by policy]
   end
 
   subgraph StateAndPorts [State and ports]

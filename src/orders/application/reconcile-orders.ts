@@ -6,11 +6,11 @@ import { Clock } from '../../shared/clock/clock';
 // ready once the clock passes its estimated ready time.
 //
 // ponytail: readiness is derived from estimatedReadyTime, not by asking the
-// kitchen which items finished. Under FIFO with no preemption the forward-sim
-// estimate is the exact completion time of the order's last item, and later
-// orders only append to the queue tail, so a confirmed order's estimate never
-// shifts. When priority ordering lands (VIP ripple re-sorts the queue), keep
-// this valid by re-saving the new estimates on every reordered order.
+// kitchen which items finished. The forward-sim estimate is the exact
+// completion time of the order's last item, so passing it means ready. This
+// stays valid under priority scheduling because ConfirmPayment re-saves the
+// refreshed estimate of every order a higher-priority order bumps (the VIP
+// ripple), keeping each stored estimate current.
 export class ReconcileOrders {
   constructor(
     private readonly orders: OrderRepository,
