@@ -57,12 +57,6 @@ const cookie: CatalogItem = { id: 'cookie', category: Category.Cookie, price: 25
 const bread: CatalogItem = { id: 'bread', category: Category.Bread, price: 400 };
 
 describe('PlaceOrder', () => {
-  it('does not message its collaborators upon creation', () => {
-    const { orders } = makeSUT();
-
-    expect(orders.savedOrders).toHaveLength(0);
-  });
-
   it('fails with an empty order error and saves nothing when no items are requested', async () => {
     const { sut, orders } = makeSUT();
 

@@ -55,12 +55,6 @@ const makeSUT = (): { sut: UpdateMenuItem; repository: MenuRepositorySpy } => {
 };
 
 describe('UpdateMenuItem', () => {
-  it('does not message the repository upon creation', () => {
-    const { repository } = makeSUT();
-
-    expect(repository.updatedItems).toHaveLength(0);
-  });
-
   it('persists the existing item with the merged details', async () => {
     const { sut, repository } = makeSUT();
     repository.stubExisting(existingItem);

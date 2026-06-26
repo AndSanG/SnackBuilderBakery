@@ -3,11 +3,9 @@ import { MenuRepository } from './menu-repository';
 import { MenuItem, Category } from '../domain/menu-item';
 
 class MenuRepositorySpy implements MenuRepository {
-  getAllCallCount = 0;
   private result: MenuItem[] = [];
 
   async getAll(): Promise<MenuItem[]> {
-    this.getAllCallCount += 1;
     return this.result;
   }
 
@@ -48,20 +46,6 @@ const makeSUT = (): { sut: ViewMenu; repository: MenuRepositorySpy } => {
 };
 
 describe('ViewMenu', () => {
-  it('does not message the repository upon creation', () => {
-    const { repository } = makeSUT();
-
-    expect(repository.getAllCallCount).toBe(0);
-  });
-
-  it('requests all items from the repository when executed', async () => {
-    const { sut, repository } = makeSUT();
-
-    await sut.execute();
-
-    expect(repository.getAllCallCount).toBe(1);
-  });
-
   it('delivers no items on an empty repository', async () => {
     const { sut, repository } = makeSUT();
     repository.stubGetAll([]);

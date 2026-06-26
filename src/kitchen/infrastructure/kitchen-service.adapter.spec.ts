@@ -30,4 +30,13 @@ describe('KitchenServiceAdapter', () => {
     expect(estimate).toEqual(new Date(clock.now().getTime() + 5 * 60_000));
     expect(kitchen.baking().map((item) => item.id)).toEqual(['a', 'b']);
   });
+
+  it('returns the ready time for each order currently in the kitchen', async () => {
+    const { sut, clock } = makeSUT();
+    await sut.enqueueAndEstimate([cookie('a')]); // one cookie for order 'o1'
+
+    const times = await sut.readyTimes();
+
+    expect(times.get('o1')).toEqual(new Date(clock.now().getTime() + 5 * 60_000));
+  });
 });

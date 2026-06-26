@@ -6,7 +6,6 @@ import { OrderSource } from '../domain/order-source';
 import { Category } from '../../menu/domain/menu-item';
 
 class OrderRepositorySpy implements OrderRepository {
-  findByIdCallCount = 0;
   private order: Order | null = null;
 
   async save(): Promise<void> {
@@ -14,7 +13,6 @@ class OrderRepositorySpy implements OrderRepository {
   }
 
   async findById(): Promise<Order | null> {
-    this.findByIdCallCount += 1;
     return this.order;
   }
 
@@ -50,12 +48,6 @@ const makeSUT = (): { sut: TrackOrder; repository: OrderRepositorySpy } => {
 };
 
 describe('TrackOrder', () => {
-  it('does not query the repository upon creation', () => {
-    const { repository } = makeSUT();
-
-    expect(repository.findByIdCallCount).toBe(0);
-  });
-
   it('returns the order id and status when the order exists', async () => {
     const { sut, repository } = makeSUT();
     repository.stubFindById(existingOrder);

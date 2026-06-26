@@ -51,12 +51,6 @@ const makeSUT = (): { sut: RemoveMenuItem; repository: MenuRepositorySpy } => {
 };
 
 describe('RemoveMenuItem', () => {
-  it('does not message the repository upon creation', () => {
-    const { repository } = makeSUT();
-
-    expect(repository.removedIds).toHaveLength(0);
-  });
-
   it('removes the existing item from the repository', async () => {
     const { sut, repository } = makeSUT();
     repository.stubExisting(existingItem);

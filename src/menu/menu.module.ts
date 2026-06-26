@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PRISMA_CLIENT } from '../shared/prisma/prisma.module';
 import { MenuController } from './presentation/menu.controller';
 import { ViewMenu } from './application/view-menu';
 import { AddMenuItem } from './application/add-menu-item';
@@ -19,10 +20,9 @@ export const MENU_REPOSITORY = Symbol('MenuRepository');
     {
       // ponytail: env-based switch; DATABASE_URL absent means in-memory (unit tests stay fast)
       provide: MENU_REPOSITORY,
-      useFactory: (): MenuRepository =>
-        process.env.DATABASE_URL
-          ? new PrismaMenuRepository(new PrismaClient())
-          : new InMemoryMenuRepository(),
+      useFactory: (prisma: PrismaClient | null): MenuRepository =>
+        prisma ? new PrismaMenuRepository(prisma) : new InMemoryMenuRepository(),
+      inject: [PRISMA_CLIENT],
     },
     {
       provide: ViewMenu,

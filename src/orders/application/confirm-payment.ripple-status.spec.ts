@@ -56,23 +56,25 @@ describe('ConfirmPayment VIP ripple status safety', () => {
       clock,
     );
     const sut = new ConfirmPayment(orders, kitchen, new LocalPaymentProcessor());
-    const reconcile = new ReconcileOrders(orders, clock);
+    const reconcile = new ReconcileOrders(orders, clock, kitchen);
 
-    // 12 breads: 6 bake now, 6 queue. Last bread is estimated ready at 40 min.
-    await orders.save(breadOrder('walk', OrderSource.WalkIn, 12));
+    // 6 breads fill all 6 slots (done at T=20). No overflow queue, so the live
+    // kitchen state at T=20 will be empty for walk (all items cleared) and the
+    // reconcile falls back to the stored estimate to mark the order Ready.
+    await orders.save(breadOrder('walk', OrderSource.WalkIn, 6));
     await orders.save(breadOrder('vip', OrderSource.Vip, 1));
     await sut.execute('walk', cash);
 
-    // While the VIP confirmation runs its ripple (which would push walk's
-    // estimate back to 60 min), jump the clock to walk's stale 40 min estimate
-    // and reconcile, advancing walk to Ready before the ripple writes.
+    // While the VIP confirmation runs its ripple, jump the clock to T=20 and
+    // reconcile. Walk's items have all cleared the oven; reconcile marks it
+    // Ready. The ripple's subsequent updateEstimateIfInKitchen must be a no-op.
     orders.onNextInKitchenScan(async () => {
-      clock.advance(40);
+      clock.advance(20);
       await reconcile.execute();
     });
     await sut.execute('vip', cash);
 
-    // The stale ripple estimate must not flip walk back into the kitchen.
+    // The ripple must not flip walk back into the kitchen.
     expect((await orders.findById('walk'))?.status).toBe(OrderStatus.Ready);
   });
 });

@@ -4,6 +4,7 @@ import { FakeClock } from '../../shared/clock/fake-clock';
 import { Order, OrderStatus } from '../domain/order';
 import { OrderSource } from '../domain/order-source';
 import { Category } from '../../shared/domain/category';
+import { KitchenService } from './kitchen-service';
 
 const inKitchen = (id: string, estimatedReadyTime: Date): Order => ({
   id,
@@ -14,6 +15,16 @@ const inKitchen = (id: string, estimatedReadyTime: Date): Order => ({
   estimatedReadyTime,
 });
 
+const noKitchen: KitchenService = {
+  enqueueAndEstimate: async () => new Date(),
+  readyTimes: async () => new Map(),
+};
+
+const kitchenWith = (times: Record<string, Date>): KitchenService => ({
+  enqueueAndEstimate: async () => new Date(),
+  readyTimes: async () => new Map(Object.entries(times)),
+});
+
 describe('ReconcileOrders', () => {
   it('marks an in-kitchen order ready once its estimate has passed', async () => {
     const repo = new InMemoryOrderRepository();
@@ -21,7 +32,7 @@ describe('ReconcileOrders', () => {
     await repo.save(inKitchen('o-1', new Date(clock.now().getTime() + 5 * 60_000)));
 
     clock.advance(5);
-    await new ReconcileOrders(repo, clock).execute();
+    await new ReconcileOrders(repo, clock, noKitchen).execute();
 
     expect((await repo.findById('o-1'))?.status).toBe(OrderStatus.Ready);
   });
@@ -32,7 +43,7 @@ describe('ReconcileOrders', () => {
     await repo.save(inKitchen('o-1', new Date(clock.now().getTime() + 10 * 60_000)));
 
     clock.advance(5);
-    await new ReconcileOrders(repo, clock).execute();
+    await new ReconcileOrders(repo, clock, noKitchen).execute();
 
     expect((await repo.findById('o-1'))?.status).toBe(OrderStatus.InKitchen);
   });
@@ -48,8 +59,22 @@ describe('ReconcileOrders', () => {
       totalPrice: 250,
     });
 
-    await new ReconcileOrders(repo, clock).execute();
+    await new ReconcileOrders(repo, clock, noKitchen).execute();
 
     expect((await repo.findById('o-1'))?.status).toBe(OrderStatus.AwaitingPayment);
+  });
+
+  it('does not mark an order ready when the kitchen reports a later finish time (VIP bump residual)', async () => {
+    // Stored estimate says ready (stale from before a VIP bump), but kitchen's
+    // live schedule puts finish 5 minutes in the future — must stay InKitchen.
+    const repo = new InMemoryOrderRepository();
+    const clock = new FakeClock();
+    const staleEstimate = new Date(clock.now().getTime()); // already passed
+    await repo.save(inKitchen('o-1', staleEstimate));
+
+    const liveFinish = new Date(clock.now().getTime() + 5 * 60_000);
+    await new ReconcileOrders(repo, clock, kitchenWith({ 'o-1': liveFinish })).execute();
+
+    expect((await repo.findById('o-1'))?.status).toBe(OrderStatus.InKitchen);
   });
 });
