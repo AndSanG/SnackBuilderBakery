@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { MenuController } from './presentation/menu.controller';
 import { ViewMenu } from './application/view-menu';
 import { AddMenuItem } from './application/add-menu-item';
@@ -6,6 +7,7 @@ import { UpdateMenuItem } from './application/update-menu-item';
 import { RemoveMenuItem } from './application/remove-menu-item';
 import { MenuRepository } from './application/menu-repository';
 import { InMemoryMenuRepository } from './infrastructure/in-memory-menu-repository';
+import { PrismaMenuRepository } from './infrastructure/prisma-menu-repository';
 
 export const MENU_REPOSITORY = Symbol('MenuRepository');
 
@@ -14,7 +16,14 @@ export const MENU_REPOSITORY = Symbol('MenuRepository');
 @Module({
   controllers: [MenuController],
   providers: [
-    { provide: MENU_REPOSITORY, useClass: InMemoryMenuRepository },
+    {
+      // ponytail: env-based switch; DATABASE_URL absent means in-memory (unit tests stay fast)
+      provide: MENU_REPOSITORY,
+      useFactory: (): MenuRepository =>
+        process.env.DATABASE_URL
+          ? new PrismaMenuRepository(new PrismaClient())
+          : new InMemoryMenuRepository(),
+    },
     {
       provide: ViewMenu,
       useFactory: (repo: MenuRepository) => new ViewMenu(repo),
