@@ -6,6 +6,9 @@ export interface KitchenItem {
   id: string;
   orderId: string;
   category: Category;
+  // Lower bakes first. Orders derives this from the order source's priority
+  // tier; the kitchen treats it as opaque.
+  priority: number;
 }
 
 // Owned by Orders, sized to what ConfirmPayment needs from the kitchen. The
@@ -14,4 +17,7 @@ export interface KitchenItem {
 export interface KitchenService {
   enqueue(items: KitchenItem[]): Promise<void>;
   estimateReadyTime(items: KitchenItem[]): Promise<Date>;
+  // Current ready time of every order in the kitchen, keyed by order id. Used
+  // to refresh estimates after a higher-priority order reorders the queue.
+  readyTimes(): Promise<Map<string, Date>>;
 }

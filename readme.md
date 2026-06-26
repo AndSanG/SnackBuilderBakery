@@ -18,7 +18,7 @@ Each feature depends on the ones above it, so the table also reflects the build 
 
 ## Current Scope
 
-The first iteration is a proof of concept that establishes the full project structure through one vertical slice: Menu Management, Order Placement, an always-successful payment confirmation, a FIFO Kitchen Scheduler, and Capacity-Based Estimation (features 1 to 4). The goal is to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Priority Queuing, Kitchen Monitoring, and real Payment Management come next. See [assumptions.md](docs/assumptions.md) for the simplifications this implies.
+The current build establishes the full project structure end to end and adds priority scheduling on top: Menu Management, Order Placement, an always-successful payment confirmation, a priority-based Kitchen Scheduler (VIP, App/Delivery, Walk-in) with capacity-based estimation and the VIP ripple recalculation (features 1 to 5). The goal was to lay down the architecture, module boundaries, and end-to-end flow that the remaining features build on. Kitchen Monitoring and real Payment Management come next. See [assumptions.md](docs/assumptions.md) for the simplifications this implies.
 
 ## Getting Started
 

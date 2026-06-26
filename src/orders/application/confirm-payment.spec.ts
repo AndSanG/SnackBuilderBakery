@@ -42,6 +42,11 @@ class KitchenServiceSpy implements KitchenService {
     return this.estimate;
   }
 
+  async readyTimes(): Promise<Map<string, Date>> {
+    this.calls.push('readyTimes');
+    return new Map();
+  }
+
   stubEstimate(time: Date): void {
     this.estimate = time;
   }
@@ -88,15 +93,15 @@ describe('ConfirmPayment', () => {
     );
   });
 
-  it('enqueues the order items as kitchen items', async () => {
+  it('enqueues the order items as kitchen items with the source priority', async () => {
     const { sut, orders, kitchen } = makeSUT();
-    orders.stubFindById(awaitingOrder());
+    orders.stubFindById(awaitingOrder()); // a VIP order, priority tier 1
 
     await sut.execute('order-1');
 
     expect(kitchen.enqueued[0]).toEqual([
-      { id: 'i1', orderId: 'order-1', category: Category.Cookie },
-      { id: 'i2', orderId: 'order-1', category: Category.Bread },
+      { id: 'i1', orderId: 'order-1', category: Category.Cookie, priority: 1 },
+      { id: 'i2', orderId: 'order-1', category: Category.Bread, priority: 1 },
     ]);
   });
 
@@ -106,7 +111,7 @@ describe('ConfirmPayment', () => {
 
     await sut.execute('order-1');
 
-    expect(kitchen.calls).toEqual(['estimate', 'enqueue']);
+    expect(kitchen.calls).toEqual(['estimate', 'enqueue', 'readyTimes']);
   });
 
   it('moves the order into the kitchen with the estimated ready time', async () => {
