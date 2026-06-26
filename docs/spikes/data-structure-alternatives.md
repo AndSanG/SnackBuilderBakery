@@ -118,6 +118,64 @@ IndexedStore    100000          0.8531      0.0003
    Hand-rolling it in the in-memory adapter now would be throwaway work that
    still would not help the non-selective query.
 
+## End-to-end measurement: the real Kitchen and use case
+
+The numbers above are isolated micro-benchmarks of the structures' own
+operations. To check they hold when the structures run inside the real code, the
+alternatives were also swapped behind the actual seams and driven through the
+real paths: a `WaitingQueue` seam was added to `Kitchen` (so `reconcile`, the
+estimate and `readyTimes` run on the chosen structure), and the `IndexedStore`
+idea was reimplemented against the real `OrderRepository` port and run through
+`ReconcileOrders.execute()`. A test confirms all three queues drive the real
+Kitchen to identical baking, waiting and ready-time output.
+
+Reproduce:
+
+```bash
+npx jest --config spike/jest-spike.json   # includes the real-Kitchen equivalence test
+npx ts-node spike/integration/bench.ts
+```
+
+```
+=== Real Kitchen: build+reconcile, then estimate+readyTimes read ===
+queue                 N           build ms    read ms
+ArraySort (current)   1000            0.0658      0.2283
+SortedInsert          1000            0.0465      0.1547
+BinaryHeap            1000            0.0072      0.2257
+ArraySort (current)   10000           0.6429      2.9680
+SortedInsert          10000           1.6364      2.0855
+BinaryHeap            10000           0.0556      3.8042
+
+=== Real ReconcileOrders.execute() over T in-kitchen orders ===
+repo                  T             reconcile ms
+ScanRepo (current)    10000             0.1057
+IndexedRepo           10000             0.2508
+ScanRepo (current)    100000            1.9281
+IndexedRepo           100000            4.3384
+```
+
+What the real paths add to the isolated picture:
+
+- **The heap's cheap insert does not matter, because the kitchen is read-heavy.**
+  Its build is by far the cheapest (0.056 ms at 10k: enqueue is O(log Q) and
+  reconcile only drains 6 slots), but every confirm does an estimate *and* a
+  `readyTimes` (the ripple), and every reconcile reads too. Reads dominate, and
+  the heap's read is the worst (3.80 ms), because each `ordered()` is a heapsort.
+  The structure optimizes the operation the kitchen does least.
+- **The index is now strictly worse, at every size** (4.34 ms vs 1.93 ms at
+  T = 100k), more decisive than the isolated bench. Driven through the real
+  `findByStatus(InKitchen)`, which matches *every* order, `IndexedRepo` round
+  trips each id back through the id map, while `ScanRepo` does a single pass over
+  the values. For a non-selective query the index is pure overhead.
+
+Both end-to-end results reinforce the isolated conclusion rather than soften it.
+
+The `WaitingQueue` seam added to `Kitchen` for this measurement is spike
+scaffolding, not a shipped change. Since the decision is to keep the array, the
+seam (an abstraction with one production implementation) stays on this branch
+and does not merge: introducing it for real would be the speculative
+abstraction the conclusion argues against.
+
 ## Summary
 
 Both subsystems keep their current structure. The value of the spike is the

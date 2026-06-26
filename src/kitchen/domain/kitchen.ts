@@ -1,5 +1,6 @@
 import { Category, bakeDurationMinutes } from '../../shared/domain/category';
 import { FifoPolicy, SchedulingPolicy } from './scheduling-policy';
+import { ArraySortWaitingQueue, WaitingQueue } from './waiting-queue';
 
 export const OVEN_SLOTS = 6; // 2 ovens x 3 trays
 
@@ -30,12 +31,14 @@ export class Kitchen {
   private slots: (BakingItem | null)[] = new Array<BakingItem | null>(
     OVEN_SLOTS,
   ).fill(null);
-  private queue: BakeableItem[] = [];
 
-  constructor(private readonly policy: SchedulingPolicy = new FifoPolicy()) {}
+  constructor(
+    policy: SchedulingPolicy = new FifoPolicy(),
+    private readonly queue: WaitingQueue = new ArraySortWaitingQueue(policy),
+  ) {}
 
   enqueue(items: BakeableItem[]): void {
-    this.queue.push(...items);
+    this.queue.enqueue(items);
   }
 
   reconcile(now: Date): void {
@@ -50,7 +53,7 @@ export class Kitchen {
   }
 
   waiting(): BakeableItem[] {
-    return [...this.queue];
+    return this.queue.ordered();
   }
 
   // Forward-simulates the schedule on copies of the slot and queue state to
@@ -60,7 +63,7 @@ export class Kitchen {
     const slotFreeTimes = this.slots.map((slot) =>
       slot === null ? now.getTime() : this.finishTimeOf(slot),
     );
-    const pending = this.policy.order([...this.queue, ...orderItems]);
+    const pending = this.queue.ordered(orderItems);
     const orderItemIds = new Set(orderItems.map((item) => item.id));
 
     let latestFinish = now.getTime();
@@ -82,8 +85,8 @@ export class Kitchen {
   // queue (the VIP ripple).
   //
   // ponytail: this mirrors estimateReadyTime's slot-assignment loop. Both order
-  // the queue through the same policy, so they stay consistent; keep them in
-  // sync if the scheduling math changes.
+  // the queue through the same WaitingQueue, so they stay consistent; keep them
+  // in sync if the scheduling math changes.
   readyTimes(now: Date): Map<string, Date> {
     const slotFreeTimes = this.slots.map((slot) =>
       slot === null ? now.getTime() : this.finishTimeOf(slot),
@@ -101,7 +104,7 @@ export class Kitchen {
         record(slot.item.orderId, this.finishTimeOf(slot));
       }
     }
-    for (const item of this.policy.order(this.queue)) {
+    for (const item of this.queue.ordered()) {
       const earliest = Math.min(...slotFreeTimes);
       const slot = slotFreeTimes.indexOf(earliest);
       const finish = earliest + bakeDurationMinutes[item.category] * 60_000;
@@ -118,13 +121,14 @@ export class Kitchen {
   }
 
   private fillFreeSlots(now: Date): void {
-    const ordered = this.policy.order(this.queue);
-    for (let i = 0; i < this.slots.length; i++) {
-      if (this.slots[i] === null && ordered.length > 0) {
-        this.slots[i] = { item: ordered.shift() as BakeableItem, startedAt: now };
+    const freeCount = this.slots.filter((slot) => slot === null).length;
+    const taken = this.queue.take(freeCount);
+    let next = 0;
+    for (let i = 0; i < this.slots.length && next < taken.length; i++) {
+      if (this.slots[i] === null) {
+        this.slots[i] = { item: taken[next++], startedAt: now };
       }
     }
-    this.queue = ordered;
   }
 
   private isDone(baking: BakingItem, now: Date): boolean {
